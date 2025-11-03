@@ -171,40 +171,23 @@ Dieses BDUF-Dokument definiert die vollständige technische Architektur der PSA-
 
 ## 2. TECHNOLOGIE-STACK (DETAILLIERT)
 
-### 2.1 Backend-Technologien
+### 2.1 Backend-Stack
 
-**Primary Backend: Node.js 20 LTS + TypeScript 5.x**
+**Node.js 20 LTS + TypeScript 5.x**
 
-**Begründung:**
+**Vorteile:**
 ✅ Non-blocking I/O für hohen Durchsatz
-✅ Einheitliche Sprache (JavaScript/TypeScript) auf Frontend + Backend
-✅ Großes NPM-Ecosystem mit reifen Libraries
-✅ Excellente Performance für I/O-intensive Applikationen
-✅ Starke Community und Enterprise-Support
-✅ Team-Know-how bereits vorhanden
+✅ JavaScript/TypeScript auf Frontend + Backend
+✅ Große NPM-Ecosystem
+✅ Gute Performance für I/O-intensive Apps
+✅ Starke Community
 
 **Framework: NestJS 10.x**
 
-NestJS bietet:
-- Dependency Injection Container
-- Decorator-basiertes Design
-- TypeScript First-Class Support
-- Modular Architecture
-- Built-in Testing Support
-- OpenAPI/Swagger Integration
-
-**Beispiel Controller:**
+Beispiel Controller:
 ```typescript
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '@/auth/guards/roles.guard';
-import { Roles } from '@/auth/decorators/roles.decorator';
-import { Role } from '@/auth/enums/role.enum';
-
 @Controller('tickets')
-@ApiTags('tickets')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 export class TicketsController {
   constructor(
     private readonly ticketsService: TicketsService,
@@ -212,8 +195,8 @@ export class TicketsController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all tickets' })
-  @ApiResponse({ status: 200, description: 'Tickets retrieved successfully' })
+  @ApiOperation({ summary: 'List tickets' })
+  @ApiQuery({ name: 'status', required: false })
   async findAll(
     @Query() query: ListTicketsDto,
     @Req() req: AuthenticatedRequest,
@@ -222,10 +205,8 @@ export class TicketsController {
   }
 
   @Post()
-  @Roles(Role.Technician, Role.ServiceManager, Role.Admin)
-  @ApiOperation({ summary: 'Create new ticket' })
-  @ApiResponse({ status: 201, description: 'Ticket created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @Roles(Role.Technician, Role.ServiceManager)
+  @ApiOperation({ summary: 'Create ticket' })
   async create(
     @Body() createDto: CreateTicketDto,
     @Req() req: AuthenticatedRequest,
@@ -237,16 +218,9 @@ export class TicketsController {
       ticketId: ticket.id,
       customerId: ticket.customer_id,
       priority: ticket.priority,
-      createdBy: req.user.id,
     });
     
     return ticket;
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get ticket by ID' })
-  async findOne(@Param('id') id: string): Promise<TicketDto> {
-    return this.ticketsService.findOne(id);
   }
 
   @Patch(':id')
@@ -254,54 +228,17 @@ export class TicketsController {
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateTicketDto,
-    @Req() req: AuthenticatedRequest,
   ): Promise<TicketDto> {
-    return this.ticketsService.update(id, updateDto, req.user);
-  }
-
-  @Delete(':id')
-  @Roles(Role.ServiceManager, Role.Admin)
-  @ApiOperation({ summary: 'Delete ticket (soft delete)' })
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.ticketsService.remove(id);
+    return this.ticketsService.update(id, updateDto);
   }
 }
 ```
 
 **ORM: TypeORM 0.3.x**
 
-TypeORM Features:
-- Active Record und Data Mapper Patterns
-- Database Migrations
-- Relations (One-to-One, One-to-Many, Many-to-Many)
-- Query Builder
-- Transactions
-- Connection Pooling
-
-**Beispiel Entity:**
+Entity-Beispiel:
 ```typescript
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, 
-         CreateDateColumn, UpdateDateColumn, DeleteDateColumn, Index } from 'typeorm';
-
-export enum TicketStatus {
-  NEW = 'new',
-  ASSIGNED = 'assigned',
-  IN_PROGRESS = 'in_progress',
-  WAITING_CUSTOMER = 'waiting_customer',
-  RESOLVED = 'resolved',
-  CLOSED = 'closed',
-}
-
-export enum Priority {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
-}
-
 @Entity('tickets')
-@Index(['customer_id', 'status'])
-@Index(['assigned_to', 'status'])
 export class Ticket {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -332,12 +269,6 @@ export class Ticket {
   @Index()
   priority: Priority;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  category: string | null;
-
-  @Column({ type: 'simple-array', nullable: true })
-  tags: string[];
-
   @ManyToOne(() => Customer, { eager: false })
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
@@ -353,9 +284,6 @@ export class Ticket {
   @Column({ type: 'uuid', nullable: true })
   assigned_to: string | null;
 
-  @Column({ type: 'varchar', length: 20 })
-  source: string;
-
   @Column({ type: 'timestamp', nullable: true })
   sla_response_due: Date | null;
 
@@ -364,15 +292,6 @@ export class Ticket {
 
   @Column({ type: 'boolean', default: false })
   sla_breached: boolean;
-
-  @Column({ type: 'timestamp', nullable: true })
-  first_response_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  resolved_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  closed_at: Date | null;
 
   @CreateDateColumn()
   created_at: Date;
@@ -383,27 +302,16 @@ export class Ticket {
   @DeleteDateColumn()
   deleted_at: Date | null;
 
-  // Virtual/Computed Properties
+  // Computed properties
   get isOverdue(): boolean {
-    if (!this.sla_resolution_due || this.status === TicketStatus.CLOSED) {
-      return false;
-    }
+    if (!this.sla_resolution_due) return false;
     return new Date() > this.sla_resolution_due;
-  }
-
-  get ageInHours(): number {
-    return (Date.now() - this.created_at.getTime()) / (1000 * 60 * 60);
   }
 }
 ```
 
-**Service-Layer Beispiel:**
+**Service-Layer:**
 ```typescript
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-
 @Injectable()
 export class TicketsService {
   constructor(
@@ -411,23 +319,16 @@ export class TicketsService {
     private ticketsRepo: Repository<Ticket>,
     private readonly slaService: SlaService,
     private readonly notificationService: NotificationService,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async create(dto: CreateTicketDto, user: User): Promise<Ticket> {
-    // Validate customer exists
-    const customer = await this.customersRepo.findOne({
-      where: { id: dto.customer_id },
-    });
-    if (!customer) {
-      throw new NotFoundException('Customer not found');
-    }
-
-    // Create ticket entity
+  async create(
+    dto: CreateTicketDto,
+    user: User,
+  ): Promise<Ticket> {
+    // Create ticket
     const ticket = this.ticketsRepo.create({
       ...dto,
       status: TicketStatus.NEW,
-      source: 'portal',
       created_by: user.id,
     });
 
@@ -442,28 +343,11 @@ export class TicketsService {
       dto.priority,
     );
 
-    // Auto-assign if rules exist
-    const assignee = await this.assignmentService.findBestTechnician(
-      dto.customer_id,
-      dto.category,
-      dto.priority,
-    );
-    if (assignee) {
-      ticket.assigned_to = assignee.id;
-      ticket.status = TicketStatus.ASSIGNED;
-    }
-
     // Save to database
     const saved = await this.ticketsRepo.save(ticket);
 
-    // Send notifications
+    // Send notification
     await this.notificationService.notifyTicketCreated(saved);
-
-    // Emit event for async processing
-    this.eventEmitter.emit('ticket.created', {
-      ticket: saved,
-      user: user,
-    });
 
     return saved;
   }
@@ -490,35 +374,20 @@ export class TicketsService {
         customerId: query.customer_id,
       });
     }
-    if (query.search) {
-      qb.andWhere(
-        '(ticket.title ILIKE :search OR ticket.description ILIKE :search)',
-        { search: `%${query.search}%` },
-      );
-    }
 
     // Apply RBAC
     if (user.role === Role.Technician) {
-      // Technicians only see their own tickets
       qb.andWhere('ticket.assigned_to = :userId', { userId: user.id });
-    } else if (user.role === Role.CustomerAdmin) {
-      // Customer admins only see their customer's tickets
-      qb.andWhere('customer.id = :customerId', {
-        customerId: user.customer_id,
-      });
     }
 
     // Pagination
     const page = query.page || 1;
-    const limit = Math.min(query.limit || 20, 100); // Max 100
+    const limit = query.limit || 20;
     qb.skip((page - 1) * limit).take(limit);
 
     // Sorting
-    const sortField = query.sort || 'created_at';
-    const sortOrder = query.order || 'DESC';
-    qb.orderBy(`ticket.${sortField}`, sortOrder as 'ASC' | 'DESC');
+    qb.orderBy(`ticket.${query.sort || 'created_at'}`, query.order || 'DESC');
 
-    // Execute query
     const [items, total] = await qb.getManyAndCount();
 
     return {
@@ -529,82 +398,1235 @@ export class TicketsService {
         total,
         total_pages: Math.ceil(total / limit),
       },
-      links: {
-        self: `/tickets?page=${page}`,
-        next: page < Math.ceil(total / limit) ? `/tickets?page=${page + 1}` : null,
-        prev: page > 1 ? `/tickets?page=${page - 1}` : null,
-      },
     };
   }
+}
+```
 
-  async findOne(id: string): Promise<Ticket> {
-    const ticket = await this.ticketsRepo.findOne({
-      where: { id, deleted_at: null },
-      relations: ['customer', 'assignedTo'],
+**Alternative: Python 3.11 + FastAPI** (für KI-Modul)
+
+```python
+from fastapi import FastAPI, Depends, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+import openai
+
+app = FastAPI()
+
+class TicketAnalysisRequest(BaseModel):
+    ticket_id: str
+    title: str
+    description: str
+
+class TicketAnalysisResponse(BaseModel):
+    suggested_category: str
+    suggested_priority: str
+    similar_tickets: List[str]
+    solution_suggestions: List[str]
+    confidence: float
+
+@app.post("/ai/analyze-ticket", response_model=TicketAnalysisResponse)
+async def analyze_ticket(
+    request: TicketAnalysisRequest,
+    current_user: User = Depends(get_current_user)
+):
+    # Use LLM for analysis
+    prompt = f"""
+    Analyze this support ticket:
+    Title: {request.title}
+    Description: {request.description}
+    
+    Provide:
+    1. Suggested category
+    2. Suggested priority (low/medium/high/critical)
+    3. Similar past tickets
+    4. Solution suggestions
+    """
+    
+    response = await openai.ChatCompletion.acreate(
+        model="gpt-4",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    # Parse and return
+    return TicketAnalysisResponse(
+        suggested_category="network",
+        suggested_priority="high",
+        similar_tickets=["T-2025-00123", "T-2025-00145"],
+        solution_suggestions=["Check network cables", "Restart switch"],
+        confidence=0.85
+    )
+```
+
+### 2.2 Frontend-Stack
+
+**React 18 + TypeScript**
+
+Komponenten-Beispiel:
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTicketStore } from '@/stores/ticketStore';
+
+interface TicketListProps {
+  customerId?: string;
+}
+
+export function TicketList({ customerId }: TicketListProps) {
+  const queryClient = useQueryClient();
+  
+  // Fetch tickets
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['tickets', { customerId }],
+    queryFn: () => api.get('/tickets', { params: { customer_id: customerId } }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Create ticket mutation
+  const createMutation = useMutation({
+    mutationFn: (ticket: CreateTicketDto) => api.post('/tickets', ticket),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      toast.success('Ticket created successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to create ticket');
+    },
+  });
+
+  if (isLoading) return <TicketListSkeleton />;
+  if (error) return <ErrorAlert error={error} />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Tickets</h2>
+        <Button onClick={() => setCreateModalOpen(true)}>
+          New Ticket
+        </Button>
+      </div>
+
+      <div className="grid gap-4">
+        {data?.data.map((ticket) => (
+          <TicketCard key={ticket.id} ticket={ticket} />
+        ))}
+      </div>
+
+      <Pagination meta={data?.meta} />
+    </div>
+  );
+}
+```
+
+**State-Management: Zustand**
+```typescript
+import create from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface TicketStore {
+  filters: TicketFilters;
+  selectedTicket: Ticket | null;
+  setFilters: (filters: Partial<TicketFilters>) => void;
+  selectTicket: (ticket: Ticket | null) => void;
+  clearFilters: () => void;
+}
+
+export const useTicketStore = create<TicketStore>()(
+  persist(
+    (set) => ({
+      filters: {
+        status: undefined,
+        priority: undefined,
+        customer_id: undefined,
+      },
+      selectedTicket: null,
+      
+      setFilters: (newFilters) =>
+        set((state) => ({
+          filters: { ...state.filters, ...newFilters },
+        })),
+      
+      selectTicket: (ticket) => set({ selectedTicket: ticket }),
+      
+      clearFilters: () =>
+        set({
+          filters: {
+            status: undefined,
+            priority: undefined,
+            customer_id: undefined,
+          },
+        }),
+    }),
+    {
+      name: 'ticket-storage',
+      partialize: (state) => ({ filters: state.filters }),
+    }
+  )
+);
+```
+
+**UI-Components: Tailwind + Headless UI**
+```typescript
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
+
+interface TicketDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  ticket: Ticket;
+}
+
+export function TicketDialog({ isOpen, onClose, ticket }: TicketDialogProps) {
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black bg-opacity-25" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
+                <Dialog.Title className="text-lg font-medium leading-6 text-gray-900">
+                  {ticket.title}
+                </Dialog.Title>
+                
+                <div className="mt-4 space-y-4">
+                  <div className="flex gap-2">
+                    <PriorityBadge priority={ticket.priority} />
+                    <StatusBadge status={ticket.status} />
+                  </div>
+                  
+                  <div className="prose max-w-none">
+                    <p>{ticket.description}</p>
+                  </div>
+                  
+                  <TicketTimeline ticketId={ticket.id} />
+                </div>
+
+                <div className="mt-6 flex gap-3 justify-end">
+                  <Button variant="secondary" onClick={onClose}>
+                    Close
+                  </Button>
+                  <Button onClick={() => handleAssignToMe(ticket.id)}>
+                    Assign to Me
+                  </Button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+}
+```
+
+### 2.3 Datenbank-Stack
+
+**PostgreSQL 15+**
+
+postgresql.conf:
+```ini
+# Connection Settings
+max_connections = 200
+shared_buffers = 4GB
+effective_cache_size = 12GB
+maintenance_work_mem = 1GB
+work_mem = 20MB
+
+# WAL Settings
+wal_level = replica
+max_wal_size = 2GB
+min_wal_size = 1GB
+checkpoint_completion_target = 0.9
+
+# Query Planner
+random_page_cost = 1.1  # SSD
+effective_io_concurrency = 200
+
+# Autovacuum
+autovacuum = on
+autovacuum_max_workers = 4
+autovacuum_naptime = 10s
+
+# Logging
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_duration = off
+log_lock_waits = on
+log_statement = 'ddl'
+log_temp_files = 0
+```
+
+**Redis 7.x**
+
+redis.conf:
+```ini
+# Memory
+maxmemory 4gb
+maxmemory-policy allkeys-lru
+
+# Persistence
+save 900 1
+save 300 10
+save 60 10000
+
+appendonly yes
+appendfsync everysec
+
+# Performance
+tcp-backlog 511
+timeout 300
+tcp-keepalive 300
+
+# Security
+requirepass <strong-password>
+rename-command FLUSHDB ""
+rename-command FLUSHALL ""
+rename-command CONFIG ""
+```
+
+**Elasticsearch 8.x**
+
+elasticsearch.yml:
+```yaml
+cluster.name: psa-platform
+node.name: es-node-1
+
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+
+network.host: 10.0.30.20
+http.port: 9200
+
+discovery.seed_hosts: ["10.0.30.20", "10.0.30.21"]
+cluster.initial_master_nodes: ["es-node-1"]
+
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+```
+
+### 2.4 Message-Queue
+
+**RabbitMQ 3.12+**
+
+Exchange & Queue Setup:
+```typescript
+import amqp from 'amqplib';
+
+export class RabbitMQSetup {
+  private connection: amqp.Connection;
+  private channel: amqp.Channel;
+
+  async initialize() {
+    // Connect
+    this.connection = await amqp.connect('amqp://localhost');
+    this.channel = await this.connection.createChannel();
+
+    // Declare exchange
+    await this.channel.assertExchange('psa.events', 'topic', {
+      durable: true,
     });
 
-    if (!ticket) {
-      throw new NotFoundException(`Ticket with ID ${id} not found`);
-    }
+    // Declare queues
+    const queues = [
+      'notifications.email',
+      'notifications.teams',
+      'analytics.ticket_stats',
+      'billing.datev_export',
+      'search.index_update',
+    ];
 
-    return ticket;
-  }
-
-  async update(
-    id: string,
-    dto: UpdateTicketDto,
-    user: User,
-  ): Promise<Ticket> {
-    const ticket = await this.findOne(id);
-
-    // Check permissions
-    if (
-      user.role === Role.Technician &&
-      ticket.assigned_to !== user.id
-    ) {
-      throw new ForbiddenException(
-        'You can only update tickets assigned to you',
-      );
-    }
-
-    // Track status changes
-    const oldStatus = ticket.status;
-    Object.assign(ticket, dto);
-
-    // Update timestamps based on status changes
-    if (dto.status && dto.status !== oldStatus) {
-      if (dto.status === TicketStatus.RESOLVED) {
-        ticket.resolved_at = new Date();
-      } else if (dto.status === TicketStatus.CLOSED) {
-        ticket.closed_at = new Date();
-      }
-    }
-
-    const updated = await this.ticketsRepo.save(ticket);
-
-    // Emit events
-    if (dto.status && dto.status !== oldStatus) {
-      this.eventEmitter.emit('ticket.status_changed', {
-        ticket: updated,
-        oldStatus,
-        newStatus: dto.status,
-        user,
+    for (const queue of queues) {
+      await this.channel.assertQueue(queue, {
+        durable: true,
+        arguments: {
+          'x-message-ttl': 86400000, // 24 hours
+          'x-max-length': 10000,
+        },
       });
     }
 
-    return updated;
+    // Bind queues to exchange
+    await this.channel.bindQueue(
+      'notifications.email',
+      'psa.events',
+      'ticket.*'
+    );
+    await this.channel.bindQueue(
+      'notifications.teams',
+      'psa.events',
+      'ticket.created'
+    );
+    await this.channel.bindQueue(
+      'analytics.ticket_stats',
+      'psa.events',
+      'ticket.*'
+    );
+    await this.channel.bindQueue(
+      'billing.datev_export',
+      'psa.events',
+      'invoice.generated'
+    );
+  }
+}
+```
+
+Publisher:
+```typescript
+export class EventPublisher {
+  constructor(private channel: amqp.Channel) {}
+
+  async publish(routingKey: string, message: object) {
+    const content = Buffer.from(JSON.stringify(message));
+    
+    this.channel.publish('psa.events', routingKey, content, {
+      persistent: true,
+      contentType: 'application/json',
+      timestamp: Date.now(),
+      messageId: uuidv4(),
+    });
+  }
+}
+
+// Usage
+await eventPublisher.publish('ticket.created', {
+  ticketId: ticket.id,
+  customerId: ticket.customer_id,
+  priority: ticket.priority,
+  timestamp: new Date().toISOString(),
+});
+```
+
+Consumer:
+```typescript
+export class EmailNotificationConsumer {
+  constructor(private channel: amqp.Channel) {}
+
+  async consume() {
+    await this.channel.consume(
+      'notifications.email',
+      async (msg) => {
+        if (!msg) return;
+
+        try {
+          const event = JSON.parse(msg.content.toString());
+          await this.processEvent(event);
+          this.channel.ack(msg);
+        } catch (error) {
+          console.error('Failed to process message:', error);
+          // Requeue with delay
+          this.channel.nack(msg, false, false);
+        }
+      },
+      { noAck: false }
+    );
   }
 
-  async remove(id: string): Promise<void> {
-    const ticket = await this.findOne(id);
-    await this.ticketsRepo.softRemove(ticket);
-    
-    this.eventEmitter.emit('ticket.deleted', {
-      ticketId: id,
+  private async processEvent(event: any) {
+    // Send email notification
+    await emailService.send({
+      to: event.recipient,
+      subject: `New Ticket: ${event.title}`,
+      template: 'ticket-created',
+      data: event,
     });
   }
 }
 ```
+
+---
+
+## 3. DATENMODELL & DATENBANK-DESIGN
+
+### 3.1 Vollständiges ER-Diagramm
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Customer    │1   N│   Contact    │     │   Location   │
+│──────────────│─────│──────────────│     │──────────────│
+│ id (PK)      │     │ id (PK)      │     │ id (PK)      │
+│ name         │     │ customer_id  │     │ customer_id  │
+│ uid          │     │ first_name   │     │ address      │
+│ tier         │     │ last_name    │     │ city         │
+└──────┬───────┘     │ email        │     └──────────────┘
+       │             │ is_primary   │
+       │             └──────────────┘
+       │1
+       │
+       │N
+┌──────▼───────┐     ┌──────────────┐     ┌──────────────┐
+│   Ticket     │N   1│     User     │     │   Comment    │
+│──────────────│─────│──────────────│     │──────────────│
+│ id (PK)      │     │ id (PK)      │     │ id (PK)      │
+│ ticket_number│     │ email        │     │ ticket_id    │
+│ customer_id  │     │ role         │     │ user_id      │
+│ assigned_to  │     │ hourly_rate  │     │ content      │
+│ title        │     └──────────────┘     └──────────────┘
+│ description  │
+│ status       │
+│ priority     │     ┌──────────────┐
+└──────┬───────┘     │  TimeEntry   │
+       │1            │──────────────│
+       │             │ id (PK)      │
+       │N            │ ticket_id    │
+       └─────────────│ user_id      │
+                     │ hours        │
+                     │ billable     │
+                     │ billed       │
+                     └──────────────┘
+
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Contract   │1   N│   Invoice    │     │InvoiceItem   │
+│──────────────│─────│──────────────│     │──────────────│
+│ id (PK)      │     │ id (PK)      │     │ id (PK)      │
+│ customer_id  │     │ contract_id  │     │ invoice_id   │
+│ type         │     │ invoice_number│    │ description  │
+│ start_date   │     │ amount       │     │ quantity     │
+│ end_date     │     │ status       │     │ unit_price   │
+└──────────────┘     └──────────────┘     └──────────────┘
+
+┌──────────────┐     ┌──────────────┐
+│    Asset     │     │    License   │
+│──────────────│     │──────────────│
+│ id (PK)      │     │ id (PK)      │
+│ customer_id  │     │ asset_id     │
+│ name         │     │ license_key  │
+│ type         │     │ valid_until  │
+│ serial       │     │ quantity     │
+│ purchase_date│     └──────────────┘
+└──────────────┘
+```
+
+### 3.2 Kern-Tabellen (SQL)
+
+**customers:**
+```sql
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Basic Info
+    name VARCHAR(200) NOT NULL,
+    legal_name VARCHAR(200),
+    uid VARCHAR(20), -- Umsatzsteuer-ID
+    tax_number VARCHAR(50),
+    
+    -- Classification
+    industry VARCHAR(100),
+    employee_count INTEGER,
+    tier VARCHAR(20) CHECK (tier IN ('A', 'B', 'C')),
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'active' 
+        CHECK (status IN ('active', 'inactive', 'prospect', 'churned')),
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP,
+    
+    CONSTRAINT customers_name_unique UNIQUE(name) 
+        WHERE deleted_at IS NULL
+);
+
+CREATE INDEX idx_customers_status ON customers(status) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_customers_tier ON customers(tier);
+CREATE INDEX idx_customers_uid ON customers(uid) 
+    WHERE uid IS NOT NULL;
+```
+
+**tickets:**
+```sql
+CREATE TABLE tickets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ticket_number SERIAL UNIQUE NOT NULL,
+    
+    -- Relations
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+    assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
+    
+    -- Content
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    
+    -- Classification
+    status VARCHAR(20) DEFAULT 'new' NOT NULL
+        CHECK (status IN ('new', 'assigned', 'in_progress', 'waiting_customer', 'resolved', 'closed')),
+    priority VARCHAR(10) DEFAULT 'medium' NOT NULL
+        CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    category VARCHAR(50),
+    tags TEXT[],
+    
+    -- Source
+    source VARCHAR(20) NOT NULL
+        CHECK (source IN ('email', 'portal', 'phone', 'rmm_alert', 'api')),
+    source_reference VARCHAR(200), -- E.g., email message-id
+    
+    -- SLA
+    sla_response_due TIMESTAMP,
+    sla_resolution_due TIMESTAMP,
+    sla_breached BOOLEAN DEFAULT false,
+    
+    -- Lifecycle
+    first_response_at TIMESTAMP,
+    resolved_at TIMESTAMP,
+    closed_at TIMESTAMP,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP,
+    
+    -- Full-text search
+    search_vector tsvector GENERATED ALWAYS AS (
+        to_tsvector('german', 
+            coalesce(title, '') || ' ' || 
+            coalesce(description, '') || ' ' ||
+            coalesce(array_to_string(tags, ' '), '')
+        )
+    ) STORED
+);
+
+-- Indexes
+CREATE INDEX idx_tickets_customer ON tickets(customer_id) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_tickets_assigned ON tickets(assigned_to) 
+    WHERE deleted_at IS NULL AND status NOT IN ('closed');
+CREATE INDEX idx_tickets_status ON tickets(status) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_tickets_priority ON tickets(priority);
+CREATE INDEX idx_tickets_created ON tickets(created_at DESC);
+CREATE INDEX idx_tickets_search ON tickets USING GIN(search_vector);
+CREATE INDEX idx_tickets_sla_due ON tickets(sla_response_due, sla_resolution_due) 
+    WHERE status NOT IN ('closed') AND deleted_at IS NULL;
+
+-- Partial indexes for performance
+CREATE INDEX idx_tickets_open ON tickets(customer_id, priority) 
+    WHERE status IN ('new', 'assigned', 'in_progress') 
+    AND deleted_at IS NULL;
+```
+
+**time_entries:**
+```sql
+CREATE TABLE time_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Relations (either ticket or project)
+    ticket_id UUID REFERENCES tickets(id) ON DELETE CASCADE,
+    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    
+    -- Content
+    description TEXT,
+    notes TEXT, -- Internal notes
+    
+    -- Time
+    hours DECIMAL(5,2) NOT NULL CHECK (hours > 0 AND hours <= 24),
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    
+    -- Billing
+    billable BOOLEAN DEFAULT true NOT NULL,
+    billed BOOLEAN DEFAULT false NOT NULL,
+    invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
+    hourly_rate DECIMAL(8,2), -- Snapshot of rate at time of entry
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    
+    -- Constraints
+    CONSTRAINT time_entry_reference CHECK (
+        (ticket_id IS NOT NULL AND project_id IS NULL) OR
+        (ticket_id IS NULL AND project_id IS NOT NULL)
+    ),
+    CONSTRAINT time_entry_hours_check CHECK (
+        hours > 0 AND hours <= 24
+    )
+);
+
+-- Indexes
+CREATE INDEX idx_time_entries_ticket ON time_entries(ticket_id);
+CREATE INDEX idx_time_entries_project ON time_entries(project_id);
+CREATE INDEX idx_time_entries_user ON time_entries(user_id);
+CREATE INDEX idx_time_entries_date ON time_entries(date DESC);
+CREATE INDEX idx_time_entries_unbilled ON time_entries(user_id, date) 
+    WHERE billable = true AND billed = false;
+
+-- Prevent overlapping time entries
+CREATE UNIQUE INDEX idx_time_entries_no_overlap 
+    ON time_entries(user_id, date, ticket_id, project_id) 
+    WHERE ticket_id IS NOT NULL OR project_id IS NOT NULL;
+```
+
+**users:**
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Authentication
+    email VARCHAR(200) UNIQUE NOT NULL,
+    password_hash VARCHAR(255), -- NULL if SSO only
+    
+    -- Profile
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(50),
+    avatar_url VARCHAR(500),
+    
+    -- Role & Permissions
+    role VARCHAR(50) NOT NULL CHECK (role IN (
+        'system_admin', 'tenant_admin', 'security_admin',
+        'service_manager', 
+        'technician_l3', 'technician_l2', 'technician_l1',
+        'account_manager', 'project_manager', 'billing_manager',
+        'customer_admin', 'customer_technician', 'customer_user'
+    )),
+    permissions JSONB, -- Additional granular permissions
+    
+    -- Settings
+    hourly_rate DECIMAL(8,2),
+    language VARCHAR(5) DEFAULT 'de',
+    timezone VARCHAR(50) DEFAULT 'Europe/Vienna',
+    
+    -- Status
+    is_active BOOLEAN DEFAULT true NOT NULL,
+    is_verified BOOLEAN DEFAULT false NOT NULL,
+    
+    -- MFA
+    mfa_enabled BOOLEAN DEFAULT false NOT NULL,
+    mfa_secret VARCHAR(100),
+    mfa_recovery_codes TEXT[],
+    
+    -- SSO
+    sso_provider VARCHAR(50), -- 'azure_ad', 'google', etc.
+    sso_identifier VARCHAR(200),
+    
+    -- Security
+    last_login_at TIMESTAMP,
+    last_login_ip INET,
+    password_changed_at TIMESTAMP,
+    failed_login_attempts INTEGER DEFAULT 0,
+    locked_until TIMESTAMP,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_users_email ON users(lower(email)) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_role ON users(role) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_active ON users(is_active) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_sso ON users(sso_provider, sso_identifier) 
+    WHERE sso_provider IS NOT NULL;
+```
+
+**audit_log:**
+```sql
+CREATE TABLE audit_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- What
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id UUID NOT NULL,
+    action VARCHAR(20) NOT NULL CHECK (action IN ('CREATE', 'READ', 'UPDATE', 'DELETE')),
+    
+    -- Who
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_email VARCHAR(200),
+    user_role VARCHAR(50),
+    
+    -- Changes
+    changes JSONB, -- { "old": {...}, "new": {...} }
+    
+    -- Context
+    ip_address INET,
+    user_agent TEXT,
+    request_id VARCHAR(100),
+    
+    -- When
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL
+) PARTITION BY RANGE (created_at);
+
+-- Create partitions for each month
+CREATE TABLE audit_log_y2025m11 PARTITION OF audit_log
+    FOR VALUES FROM ('2025-11-01') TO ('2025-12-01');
+
+CREATE TABLE audit_log_y2025m12 PARTITION OF audit_log
+    FOR VALUES FROM ('2025-12-01') TO ('2026-01-01');
+
+-- Indexes on partitions
+CREATE INDEX idx_audit_entity_2025m11 ON audit_log_y2025m11(entity_type, entity_id);
+CREATE INDEX idx_audit_user_2025m11 ON audit_log_y2025m11(user_id);
+CREATE INDEX idx_audit_created_2025m11 ON audit_log_y2025m11(created_at);
+```
+
+### 3.3 Datenbank-Optimierungen
+
+**Materialized Views:**
+```sql
+-- Customer Statistics
+CREATE MATERIALIZED VIEW mv_customer_stats AS
+SELECT 
+    c.id AS customer_id,
+    c.name,
+    COUNT(DISTINCT t.id) AS total_tickets,
+    COUNT(DISTINCT t.id) FILTER (WHERE t.status IN ('new', 'assigned', 'in_progress')) AS open_tickets,
+    COUNT(DISTINCT t.id) FILTER (WHERE t.sla_breached = true) AS sla_breached_tickets,
+    AVG(EXTRACT(EPOCH FROM (t.resolved_at - t.created_at))/3600) 
+        FILTER (WHERE t.resolved_at IS NOT NULL) AS avg_resolution_hours,
+    SUM(te.hours) FILTER (WHERE te.date >= NOW() - INTERVAL '30 days') AS hours_last_30_days,
+    SUM(te.hours * te.hourly_rate) FILTER (WHERE te.date >= NOW() - INTERVAL '30 days') AS revenue_last_30_days
+FROM customers c
+LEFT JOIN tickets t ON t.customer_id = c.id
+LEFT JOIN time_entries te ON te.ticket_id = t.id
+WHERE c.deleted_at IS NULL
+GROUP BY c.id, c.name;
+
+CREATE UNIQUE INDEX ON mv_customer_stats(customer_id);
+
+-- Refresh schedule (via cron or pg_cron)
+SELECT cron.schedule('refresh-customer-stats', '0 1 * * *', 
+    'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_customer_stats');
+```
+
+**Query-Optimization:**
+```sql
+-- Explain Analyze Example
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) 
+SELECT 
+    t.*,
+    c.name as customer_name,
+    u.first_name || ' ' || u.last_name as assigned_to_name
+FROM tickets t
+LEFT JOIN customers c ON c.id = t.customer_id
+LEFT JOIN users u ON u.id = t.assigned_to
+WHERE t.status = 'open'
+  AND t.priority = 'high'
+ORDER BY t.created_at DESC
+LIMIT 20;
+
+-- Results should show:
+-- - Index Scan on idx_tickets_open
+-- - Nested Loop Join
+-- - Execution Time < 10ms
+```
+
+**Stored Procedures:**
+```sql
+-- Auto-assign ticket based on technician availability
+CREATE OR REPLACE FUNCTION auto_assign_ticket(
+    p_ticket_id UUID,
+    p_priority VARCHAR
+) RETURNS UUID AS $$
+DECLARE
+    v_assigned_to UUID;
+    v_min_open_tickets INTEGER;
+BEGIN
+    -- Find technician with least open tickets and matching skills
+    SELECT u.id INTO v_assigned_to
+    FROM users u
+    LEFT JOIN (
+        SELECT assigned_to, COUNT(*) as open_count
+        FROM tickets
+        WHERE status IN ('new', 'assigned', 'in_progress')
+          AND deleted_at IS NULL
+        GROUP BY assigned_to
+    ) t ON t.assigned_to = u.id
+    WHERE u.role LIKE 'technician_%'
+      AND u.is_active = true
+      AND u.deleted_at IS NULL
+    ORDER BY COALESCE(t.open_count, 0) ASC, RANDOM()
+    LIMIT 1;
+    
+    -- Update ticket
+    UPDATE tickets
+    SET assigned_to = v_assigned_to,
+        status = 'assigned',
+        updated_at = NOW()
+    WHERE id = p_ticket_id;
+    
+    RETURN v_assigned_to;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Triggers:**
+```sql
+-- Update updated_at timestamp automatically
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_tickets_updated_at
+    BEFORE UPDATE ON tickets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_customers_updated_at
+    BEFORE UPDATE ON customers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Validate SLA dates
+CREATE OR REPLACE FUNCTION validate_sla_dates()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.sla_response_due IS NOT NULL 
+       AND NEW.sla_resolution_due IS NOT NULL 
+       AND NEW.sla_response_due > NEW.sla_resolution_due THEN
+        RAISE EXCEPTION 'Response due date must be before resolution due date';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER validate_ticket_sla
+    BEFORE INSERT OR UPDATE ON tickets
+    FOR EACH ROW
+    EXECUTE FUNCTION validate_sla_dates();
+```
+
+**Full-Text Search:**
+```sql
+-- Search tickets
+CREATE OR REPLACE FUNCTION search_tickets(
+    p_search_query TEXT,
+    p_customer_id UUID DEFAULT NULL,
+    p_limit INTEGER DEFAULT 20
+) RETURNS TABLE (
+    ticket_id UUID,
+    ticket_number INTEGER,
+    title VARCHAR,
+    rank REAL
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        t.id,
+        t.ticket_number,
+        t.title,
+        ts_rank(t.search_vector, websearch_to_tsquery('german', p_search_query)) as rank
+    FROM tickets t
+    WHERE t.search_vector @@ websearch_to_tsquery('german', p_search_query)
+      AND (p_customer_id IS NULL OR t.customer_id = p_customer_id)
+      AND t.deleted_at IS NULL
+    ORDER BY rank DESC, t.created_at DESC
+    LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Usage
+SELECT * FROM search_tickets('netzwerk drucker problem');
+```
+
+### 3.4 Erweiterte Tabellen
+
+**contacts:**
+```sql
+CREATE TABLE contacts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    
+    -- Personal Info
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(200),
+    phone VARCHAR(50),
+    mobile VARCHAR(50),
+    
+    -- Position
+    title VARCHAR(100), -- Job title
+    department VARCHAR(100),
+    is_primary BOOLEAN DEFAULT false,
+    is_technical BOOLEAN DEFAULT false,
+    is_billing BOOLEAN DEFAULT false,
+    
+    -- Notifications
+    notify_ticket_created BOOLEAN DEFAULT true,
+    notify_ticket_resolved BOOLEAN DEFAULT true,
+    notify_invoice BOOLEAN DEFAULT false,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP,
+    
+    CONSTRAINT contacts_email_format CHECK (
+        email IS NULL OR email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'
+    )
+);
+
+CREATE INDEX idx_contacts_customer ON contacts(customer_id) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_contacts_email ON contacts(lower(email)) 
+    WHERE email IS NOT NULL;
+CREATE INDEX idx_contacts_primary ON contacts(customer_id, is_primary) 
+    WHERE is_primary = true AND deleted_at IS NULL;
+```
+
+**contracts:**
+```sql
+CREATE TABLE contracts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    
+    -- Contract Details
+    contract_number VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    
+    -- Type
+    type VARCHAR(20) NOT NULL CHECK (type IN (
+        'managed_services',
+        'project',
+        'retainer',
+        'time_and_material',
+        'fixed_price'
+    )),
+    
+    -- Duration
+    start_date DATE NOT NULL,
+    end_date DATE,
+    auto_renew BOOLEAN DEFAULT false,
+    renewal_period VARCHAR(20) CHECK (renewal_period IN ('monthly', 'quarterly', 'yearly')),
+    notice_period_days INTEGER,
+    
+    -- Billing
+    billing_cycle VARCHAR(20) NOT NULL CHECK (billing_cycle IN ('monthly', 'quarterly', 'yearly')),
+    monthly_value DECIMAL(10,2),
+    included_hours INTEGER, -- For retainer contracts
+    hourly_rate DECIMAL(8,2),
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN (
+        'draft', 'active', 'expired', 'terminated', 'cancelled'
+    )),
+    
+    -- Documents
+    signed_document_url VARCHAR(500),
+    signed_at TIMESTAMP,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_contracts_customer ON contracts(customer_id) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_contracts_status ON contracts(status) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_contracts_dates ON contracts(start_date, end_date);
+```
+
+**invoices:**
+```sql
+CREATE TABLE invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Relations
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+    contract_id UUID REFERENCES contracts(id) ON DELETE SET NULL,
+    
+    -- Invoice Details
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    invoice_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date DATE NOT NULL,
+    
+    -- Amounts
+    subtotal DECIMAL(10,2) NOT NULL,
+    tax_rate DECIMAL(5,2) NOT NULL DEFAULT 20.00, -- Austria default
+    tax_amount DECIMAL(10,2) NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    
+    -- Currency
+    currency VARCHAR(3) DEFAULT 'EUR' NOT NULL,
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN (
+        'draft', 'sent', 'paid', 'overdue', 'cancelled', 'credited'
+    )),
+    
+    -- Payment
+    payment_method VARCHAR(50),
+    payment_date DATE,
+    payment_reference VARCHAR(100),
+    
+    -- Export
+    exported_to_erp BOOLEAN DEFAULT false,
+    exported_at TIMESTAMP,
+    export_reference VARCHAR(100), -- DATEV/BMD reference
+    
+    -- Documents
+    pdf_url VARCHAR(500),
+    zugferd_xml TEXT, -- ZUGFeRD 2.1 XML
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP,
+    
+    CONSTRAINT invoice_due_after_invoice CHECK (due_date >= invoice_date),
+    CONSTRAINT invoice_total_correct CHECK (
+        total = subtotal + tax_amount
+    )
+);
+
+CREATE INDEX idx_invoices_customer ON invoices(customer_id) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_invoices_status ON invoices(status) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_invoices_dates ON invoices(invoice_date DESC, due_date);
+CREATE INDEX idx_invoices_overdue ON invoices(due_date) 
+    WHERE status IN ('sent', 'overdue') AND deleted_at IS NULL;
+```
+
+**projects:**
+```sql
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Relations
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    contract_id UUID REFERENCES contracts(id) ON DELETE SET NULL,
+    project_manager_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    
+    -- Project Details
+    project_number VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    
+    -- Schedule
+    start_date DATE NOT NULL,
+    end_date DATE,
+    estimated_hours DECIMAL(8,2),
+    
+    -- Budget
+    budget DECIMAL(10,2),
+    hourly_rate DECIMAL(8,2),
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'planning' CHECK (status IN (
+        'planning', 'in_progress', 'on_hold', 'completed', 'cancelled'
+    )),
+    health VARCHAR(20) CHECK (health IN ('green', 'yellow', 'red')),
+    
+    -- Progress
+    completion_percentage INTEGER DEFAULT 0 CHECK (
+        completion_percentage >= 0 AND completion_percentage <= 100
+    ),
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_projects_customer ON projects(customer_id) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_projects_status ON projects(status) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_projects_manager ON projects(project_manager_id) 
+    WHERE deleted_at IS NULL;
+```
+
+**assets:**
+```sql
+CREATE TABLE assets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Relations
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
+    assigned_to_contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+    
+    -- Asset Details
+    name VARCHAR(200) NOT NULL,
+    asset_type VARCHAR(50) NOT NULL CHECK (asset_type IN (
+        'server', 'workstation', 'laptop', 'printer', 
+        'network_device', 'mobile', 'software', 'other'
+    )),
+    manufacturer VARCHAR(100),
+    model VARCHAR(100),
+    serial_number VARCHAR(100),
+    
+    -- Purchase
+    purchase_date DATE,
+    purchase_price DECIMAL(10,2),
+    supplier VARCHAR(200),
+    
+    -- Warranty
+    warranty_expires DATE,
+    warranty_type VARCHAR(50),
+    
+    -- Lifecycle
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN (
+        'active', 'inactive', 'maintenance', 'retired', 'disposed'
+    )),
+    eol_date DATE, -- End of Life
+    
+    -- Technical
+    ip_address INET,
+    mac_address MACADDR,
+    hostname VARCHAR(200),
+    operating_system VARCHAR(100),
+    
+    -- RMM Integration
+    rmm_id VARCHAR(100), -- ID in RMM system
+    rmm_last_seen TIMESTAMP,
+    
+    -- Notes
+    notes TEXT,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_assets_customer ON assets(customer_id) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_assets_type ON assets(asset_type) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_assets_status ON assets(status) 
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_assets_warranty ON assets(warranty_expires) 
+    WHERE warranty_expires IS NOT NULL AND status = 'active';
+CREATE INDEX idx_assets_rmm ON assets(rmm_id) 
+    WHERE rmm_id IS NOT NULL;
+```
+
+---
+
 
 ## 4. API-DESIGN (DETAILLIERT)
 
