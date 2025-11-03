@@ -200,7 +200,9 @@ CREATE TABLE time_entries (
     billable BOOLEAN DEFAULT true NOT NULL,
     billed BOOLEAN DEFAULT false NOT NULL,
     invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
-    hourly_rate DECIMAL(8,2), -- Snapshot of rate at time of entry
+    billing_rate DECIMAL(8,2) NOT NULL, -- Rate charged to customer (snapshot at time of entry)
+    cost_rate DECIMAL(8,2), -- Internal cost rate (snapshot from user)
+    work_type VARCHAR(50), -- For rate lookup context: 'support', 'project', 'consulting', 'emergency'
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT NOW() NOT NULL,
@@ -254,9 +256,10 @@ CREATE TABLE users (
         'customer_admin', 'customer_technician', 'customer_user'
     )),
     permissions JSONB, -- Additional granular permissions
-    
+
     -- Settings
-    hourly_rate DECIMAL(8,2),
+    internal_cost_rate DECIMAL(8,2), -- MSP's internal cost for this user (for profitability calculations)
+    default_billing_rate DECIMAL(8,2), -- Fallback billing rate if no customer-specific rate defined
     language VARCHAR(5) DEFAULT 'de',
     timezone VARCHAR(50) DEFAULT 'Europe/Vienna',
     
@@ -292,8 +295,74 @@ CREATE INDEX idx_users_role ON users(role)
     WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_active ON users(is_active) 
     WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_sso ON users(sso_provider, sso_identifier) 
+CREATE INDEX idx_users_sso ON users(sso_provider, sso_identifier)
     WHERE sso_provider IS NOT NULL;
+```
+
+**user_billing_rates:**
+```sql
+-- Context-specific billing rates for users
+-- Allows different billing rates per customer, contract, service level, or work type
+CREATE TABLE user_billing_rates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- User
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    -- Context (at least one must be specified)
+    customer_id UUID REFERENCES customers(id) ON DELETE CASCADE,
+    contract_id UUID REFERENCES contracts(id) ON DELETE CASCADE,
+
+    -- Rate Details
+    billing_rate DECIMAL(8,2) NOT NULL CHECK (billing_rate > 0),
+
+    -- Optional: Service Level Override
+    service_level VARCHAR(20) CHECK (service_level IN ('L1', 'L2', 'L3', 'project', 'consulting')),
+
+    -- Optional: Work Type
+    work_type VARCHAR(50), -- e.g., 'support', 'project', 'consulting', 'emergency'
+
+    -- Validity Period
+    valid_from DATE NOT NULL DEFAULT CURRENT_DATE,
+    valid_until DATE,
+
+    -- Status
+    is_active BOOLEAN DEFAULT true NOT NULL,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+    deleted_at TIMESTAMP,
+
+    -- Constraints
+    CONSTRAINT user_rate_context CHECK (
+        customer_id IS NOT NULL OR contract_id IS NOT NULL
+    ),
+    CONSTRAINT user_rate_valid_period CHECK (
+        valid_until IS NULL OR valid_until >= valid_from
+    )
+);
+
+-- Indexes
+CREATE INDEX idx_user_billing_rates_user ON user_billing_rates(user_id)
+    WHERE deleted_at IS NULL;
+CREATE INDEX idx_user_billing_rates_customer ON user_billing_rates(customer_id)
+    WHERE customer_id IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX idx_user_billing_rates_contract ON user_billing_rates(contract_id)
+    WHERE contract_id IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX idx_user_billing_rates_lookup ON user_billing_rates(
+    user_id, customer_id, contract_id, service_level, work_type
+) WHERE is_active = true AND deleted_at IS NULL;
+
+-- Prevent duplicate rate definitions
+CREATE UNIQUE INDEX idx_user_billing_rates_unique ON user_billing_rates(
+    user_id,
+    COALESCE(customer_id::text, 'NULL'),
+    COALESCE(contract_id::text, 'NULL'),
+    COALESCE(service_level, 'NULL'),
+    COALESCE(work_type, 'NULL'),
+    valid_from
+) WHERE deleted_at IS NULL;
 ```
 
 **audit_log:**
@@ -336,6 +405,148 @@ CREATE INDEX idx_audit_user_2025m11 ON audit_log_y2025m11(user_id);
 CREATE INDEX idx_audit_created_2025m11 ON audit_log_y2025m11(created_at);
 ```
 
+#### 3.2.1 Billing Rate Resolution Logic
+
+When creating a time entry, the system resolves the billing rate using this hierarchy (most specific to least specific):
+
+**Rate Resolution Hierarchy:**
+```
+1. user_billing_rates (context-specific rates)
+   ├─> user + contract + service_level + work_type  (most specific)
+   ├─> user + contract + service_level
+   ├─> user + contract + work_type
+   ├─> user + contract
+   ├─> user + customer + service_level + work_type
+   ├─> user + customer + service_level
+   ├─> user + customer + work_type
+   └─> user + customer
+
+2. contracts.hourly_rate (contract default)
+
+3. users.default_billing_rate (user default)
+
+4. ERROR: No billing rate configured
+```
+
+**Example Scenarios:**
+
+*Scenario 1: Customer-specific rate*
+- User: senior@msp.com (L3 technician)
+- Customer: Acme Corp
+- Rate defined: €120/hour for this user + customer
+- **Result:** Time entry billed at €120/hour
+
+*Scenario 2: Contract-specific rate*
+- User: junior@msp.com (L1 technician)
+- Customer: Beta Ltd
+- Contract: Premium Support Contract (€150/hour in contract)
+- No user_billing_rates entry found
+- **Result:** Time entry billed at €150/hour (from contract)
+
+*Scenario 3: Service level override*
+- User: mid@msp.com (L2 technician)
+- Customer: Gamma Inc
+- Service Level: L3 (working above their level)
+- Rate defined: €130/hour for this user + customer + L3
+- **Result:** Time entry billed at €130/hour (override rate)
+
+*Scenario 4: Fallback to default*
+- User: new@msp.com
+- Customer: Delta Corp
+- No specific rates configured
+- User default_billing_rate: €100/hour
+- **Result:** Time entry billed at €100/hour (fallback)
+
+**SQL Function for Rate Resolution:**
+
+```sql
+CREATE OR REPLACE FUNCTION get_billing_rate(
+    p_user_id UUID,
+    p_customer_id UUID,
+    p_contract_id UUID DEFAULT NULL,
+    p_service_level VARCHAR(20) DEFAULT NULL,
+    p_work_type VARCHAR(50) DEFAULT NULL,
+    p_date DATE DEFAULT CURRENT_DATE
+) RETURNS DECIMAL(8,2) AS $$
+DECLARE
+    v_rate DECIMAL(8,2);
+BEGIN
+    -- Try user_billing_rates (most specific to least specific)
+    SELECT billing_rate INTO v_rate
+    FROM user_billing_rates
+    WHERE user_id = p_user_id
+      AND deleted_at IS NULL
+      AND is_active = true
+      AND valid_from <= p_date
+      AND (valid_until IS NULL OR valid_until >= p_date)
+      AND (
+          (contract_id = p_contract_id AND service_level = p_service_level AND work_type = p_work_type) OR
+          (contract_id = p_contract_id AND service_level = p_service_level AND work_type IS NULL) OR
+          (contract_id = p_contract_id AND service_level IS NULL AND work_type = p_work_type) OR
+          (contract_id = p_contract_id AND service_level IS NULL AND work_type IS NULL) OR
+          (customer_id = p_customer_id AND service_level = p_service_level AND work_type = p_work_type) OR
+          (customer_id = p_customer_id AND service_level = p_service_level AND work_type IS NULL) OR
+          (customer_id = p_customer_id AND service_level IS NULL AND work_type = p_work_type) OR
+          (customer_id = p_customer_id AND service_level IS NULL AND work_type IS NULL)
+      )
+    ORDER BY
+        (CASE WHEN contract_id IS NOT NULL THEN 1 ELSE 2 END),
+        (CASE WHEN service_level IS NOT NULL THEN 1 ELSE 2 END),
+        (CASE WHEN work_type IS NOT NULL THEN 1 ELSE 2 END),
+        created_at DESC
+    LIMIT 1;
+
+    IF v_rate IS NOT NULL THEN
+        RETURN v_rate;
+    END IF;
+
+    -- Try contract default rate
+    IF p_contract_id IS NOT NULL THEN
+        SELECT hourly_rate INTO v_rate
+        FROM contracts
+        WHERE id = p_contract_id AND hourly_rate IS NOT NULL AND deleted_at IS NULL;
+
+        IF v_rate IS NOT NULL THEN
+            RETURN v_rate;
+        END IF;
+    END IF;
+
+    -- Try user default rate
+    SELECT default_billing_rate INTO v_rate
+    FROM users
+    WHERE id = p_user_id AND default_billing_rate IS NOT NULL AND deleted_at IS NULL;
+
+    IF v_rate IS NOT NULL THEN
+        RETURN v_rate;
+    END IF;
+
+    -- No rate found
+    RAISE EXCEPTION 'No billing rate configured for user % on customer/contract', p_user_id;
+END;
+$$ LANGUAGE plpgsql STABLE;
+```
+
+**Profitability Calculation:**
+
+```sql
+-- Calculate profit per ticket (revenue - cost)
+SELECT
+    t.id,
+    t.title,
+    c.name AS customer,
+    SUM(te.hours * te.billing_rate) AS revenue,
+    SUM(te.hours * te.cost_rate) AS cost,
+    SUM(te.hours * (te.billing_rate - te.cost_rate)) AS profit,
+    ROUND(100.0 * SUM(te.hours * (te.billing_rate - te.cost_rate)) /
+          NULLIF(SUM(te.hours * te.billing_rate), 0), 2) AS margin_pct
+FROM tickets t
+JOIN customers c ON t.customer_id = c.id
+LEFT JOIN time_entries te ON te.ticket_id = t.id
+WHERE te.billable = true
+GROUP BY t.id, t.title, c.name
+ORDER BY profit DESC;
+```
+
 ### 3.3 Datenbank-Optimierungen
 
 **Materialized Views:**
@@ -351,7 +562,7 @@ SELECT
     AVG(EXTRACT(EPOCH FROM (t.resolved_at - t.created_at))/3600) 
         FILTER (WHERE t.resolved_at IS NOT NULL) AS avg_resolution_hours,
     SUM(te.hours) FILTER (WHERE te.date >= NOW() - INTERVAL '30 days') AS hours_last_30_days,
-    SUM(te.hours * te.hourly_rate) FILTER (WHERE te.date >= NOW() - INTERVAL '30 days') AS revenue_last_30_days
+    SUM(te.hours * te.billing_rate) FILTER (WHERE te.date >= NOW() - INTERVAL '30 days') AS revenue_last_30_days
 FROM customers c
 LEFT JOIN tickets t ON t.customer_id = c.id
 LEFT JOIN time_entries te ON te.ticket_id = t.id
