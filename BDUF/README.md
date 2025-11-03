@@ -21,7 +21,7 @@ Dieses BDUF-Dokument definiert die vollständige technische Architektur der PSA-
 - CI/CD mit GitLab
 - 3-Node HA-Cluster
 
-**Dokument-Umfang:** 150+ Seiten technische Spezifikationen
+**Dokument-Umfang:** 20 Kapitel + Appendix mit 200+ Seiten technische Spezifikationen
 
 ---
 
@@ -87,6 +87,78 @@ Die BDUF-Dokumentation ist in folgende Kapitel aufgeteilt:
 - Alerting & On-Call
 - Metrics & KPIs
 
+### [Kapitel 10: Backup & Disaster Recovery](BDUF-Chapter10.md)
+- Backup-Strategie (GFS-Schema)
+- Disaster Recovery-Plan
+- RTO/RPO-Ziele
+- Backup-Testing
+
+### [Kapitel 11: Performance-Optimierung](BDUF-Chapter11.md)
+- Database-Performance-Tuning
+- API-Optimierungen
+- Caching-Strategien
+- Query-Optimierung
+
+### [Kapitel 12: Skalierungs-Strategie](BDUF-Chapter12.md)
+- Horizontal vs. Vertical Scaling
+- Database Read-Replicas
+- Service-Replikation
+- Load Balancing
+
+### [Kapitel 13: Code-Organisation & Standards](BDUF-Chapter13.md)
+- Monorepo-Struktur
+- Coding-Standards
+- Code-Review-Prozess
+- Git-Workflow
+
+### [Kapitel 14: Testing-Strategie](BDUF-Chapter14.md)
+- Test-Pyramid
+- Unit/Integration/E2E-Tests
+- Performance-Tests
+- Security-Tests
+
+### [Kapitel 15: Entwicklungs-Workflow](BDUF-Chapter15.md)
+- Feature-Development
+- Branch-Strategy
+- Merge-Requests
+- Release-Prozess
+
+### [Kapitel 16: Architecture Decision Records (ADR)](BDUF-Chapter16.md)
+- ADR-Template
+- Wichtige Architekturentscheidungen
+- ADR-Verwaltungsprozess
+- Dokumentierte Entscheidungen (LXC, PostgreSQL, etc.)
+
+### [Kapitel 17: Performance Benchmarks](BDUF-Chapter17.md)
+- Response-Zeit-Anforderungen
+- Durchsatz-Benchmarks
+- Skalierungsgrenzen
+- Load-Test-Szenarien
+
+### [Kapitel 18: Security Checklist](BDUF-Chapter18.md)
+- Pre-Deployment Security Checklist
+- DSGVO-Compliance Checklist
+- ISO 27001 Controls
+- Penetration Testing
+
+### [Kapitel 19: Deployment Checklist](BDUF-Chapter19.md)
+- Pre-Deployment Checklist
+- Deployment-Prozess
+- Blue-Green Deployment
+- Rollback-Prozedur
+
+### [Kapitel 20: Maintenance & Troubleshooting](BDUF-Chapter20.md)
+- Regelmäßige Wartungsaufgaben
+- Patch-Management
+- Incident-Management
+- Troubleshooting-Guides
+
+### [Appendix: Nützliche Befehle](BDUF-Appendix.md)
+- Proxmox-Befehle
+- PostgreSQL-Befehle
+- Docker/LXC-Befehle
+- Troubleshooting-Commands
+
 ---
 
 ## VERWENDUNG
@@ -100,6 +172,7 @@ Die BDUF-Dokumentation ist in folgende Kapitel aufgeteilt:
 - **Kapitel 6-9** beschreiben Infrastructure, Deployment und Monitoring
 - **Kapitel 10** behandelt Backup & Disaster Recovery
 - **Kapitel 19** enthält die Deployment Checklist
+- **Kapitel 20** enthält Maintenance & Troubleshooting Guides
 
 ### Für Security
 - **Kapitel 5** definiert die Security-Architektur
@@ -109,6 +182,7 @@ Die BDUF-Dokumentation ist in folgende Kapitel aufgeteilt:
 - **Kapitel 1** erklärt Architektur-Prinzipien
 - **Kapitel 16** dokumentiert Architecture Decision Records (ADRs)
 - **Kapitel 12** beschreibt Skalierungs-Strategien
+- **Kapitel 17** enthält Performance Benchmarks
 
 ---
 
@@ -138,8 +212,13 @@ Siehe [BDUF-Chapter3-Billing-Rate-Fix.md](BDUF-Chapter3-Billing-Rate-Fix.md) fü
 
 ### Version 1.0 (November 2025)
 - Initial BDUF-Dokumentation
-- Aufteilung in 9 Kapitel für bessere Lesbarkeit
-- Billing Rate Model Fix hinzugefügt
+- Vollständige Aufteilung in 20 Kapitel + Appendix
+- Billing Rate Model Fix hinzugefügt (Kapitel 3)
+- Architecture Decision Records hinzugefügt (Kapitel 16)
+- Performance Benchmarks hinzugefügt (Kapitel 17)
+- Security Checklist hinzugefügt (Kapitel 18)
+- Deployment Checklist hinzugefügt (Kapitel 19)
+- Maintenance & Troubleshooting hinzugefügt (Kapitel 20)
 
 ---
 
