@@ -249,10 +249,29 @@ CREATE TABLE users (
     
     -- Role & Permissions
     role VARCHAR(50) NOT NULL CHECK (role IN (
+        -- System Admins
         'system_admin', 'tenant_admin', 'security_admin',
-        'service_manager', 
+        'service_manager',
+
+        -- Software Developers (by seniority)
+        'software_developer_lead',      -- Tech Lead (8+ years)
+        'software_developer_senior',    -- Senior Developer (5+ years)
+        'software_developer',           -- Mid-Level Developer (2-5 years)
+        'software_developer_junior',    -- Junior Developer (0-2 years)
+
+        -- Support Technicians (by seniority)
+        'technician_lead',              -- Support Team Lead (8+ years)
+        'technician_senior',            -- Senior Technician (5+ years)
+        'technician',                   -- Mid-Level Technician (2-5 years)
+        'technician_junior',            -- Junior Technician (0-2 years)
+
+        -- Legacy Support Tier (DEPRECATED - use service_level in user_billing_rates instead)
         'technician_l3', 'technician_l2', 'technician_l1',
+
+        -- Other Internal Roles
         'account_manager', 'project_manager', 'billing_manager',
+
+        -- Customer Roles
         'customer_admin', 'customer_technician', 'customer_user'
     )),
     permissions JSONB, -- Additional granular permissions
