@@ -198,6 +198,10 @@ When you make ANY code changes, you MUST:
 - [ ] **Commit frequently** with clear, descriptive commit messages
 - [ ] **Document what changed** in the commit message (not just "update file")
 - [ ] **Document why it changed** (explain the reasoning)
+- [ ] **🚨 PUSH IMMEDIATELY after every commit** - Use `git push origin <branch-name>`
+  - **CRITICAL:** Every commit MUST be pushed right away
+  - Unpushed commits = invisible work = coordination problems
+  - This ensures work is visible to all agents and prevents conflicts
 - [ ] **Update relevant documentation** (README, API docs, etc.)
 
 #### 3. Status Updates (Required)
@@ -215,11 +219,15 @@ When you complete or change scope:
 
 #### 5. Before Ending a Session (Checklist)
 - [ ] All code changes committed with clear messages
+- [ ] **🚨 ALL COMMITS PUSHED** to GitHub (use `git push origin <branch>`)
+- [ ] Verify push succeeded: `git status` should show "up-to-date with origin"
 - [ ] Todo list updated with current status
 - [ ] ACTIVE-ASSIGNMENTS.md reflects current state
 - [ ] Any blockers documented
 - [ ] Status report created if completing a milestone
 - [ ] Next steps clearly documented for continuation
+
+**⚠️ WARNING:** Sessions that end with unpushed commits are incomplete!
 
 **Example Good Commit Message:**
 ```
