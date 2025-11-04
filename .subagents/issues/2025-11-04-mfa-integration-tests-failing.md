@@ -5,7 +5,9 @@
 **Reported By:** Master Agent (Main Session)
 **Severity:** 🟡 Important
 **Type:** 🐛 Bug | 🔄 Task
-**Status:** 🆕 New - Ready for Sub-Agent
+**Status:** ✅ RESOLVED - Fixed by Main Agent (PM)
+**Resolved Date:** 2025-11-04 20:16
+**Resolved By:** Main Agent (Project Manager)
 
 ---
 
@@ -263,10 +265,54 @@ Create a comment in this file or ask in project chat.
 
 ---
 
-**Created:** 2025-11-04 19:15
-**Target Resolution:** 2025-11-05
-**Estimated Effort:** 2-4 hours
+## ✅ RESOLUTION
+
+**Resolved By:** Main Agent (Project Manager)
+**Date:** 2025-11-04 20:16
+**Time to Resolution:** ~1 hour
+**Commits:**
+- 0a65f99: fix(auth): Resolve MFA integration test failures and duplicate token issue
+
+### Root Cause
+The issue was NOT with MFA recovery code validation as initially suspected. The actual problem was **duplicate refresh token hashes**.
+
+JWT tokens with identical payloads generated within the same second produce identical hashes. During the MFA flow test, multiple logins occurred in rapid succession (TOTP login followed immediately by recovery code login), causing duplicate token_hash values to violate the unique constraint in the refresh_tokens table.
+
+### Solution Implemented
+Added a unique `jti` (JWT ID) claim to each refresh token using `crypto.randomUUID()`:
+
+```typescript
+static generateRefreshToken(payload: JWTPayload): string {
+  const tokenPayload = {
+    ...payload,
+    jti: crypto.randomUUID(), // Unique identifier
+  };
+  return jwt.sign(tokenPayload, config.jwt.refreshSecret, {...});
+}
+```
+
+### Additional Fixes
+- Updated MFA code validator pattern from `/^\d{6}$/` to `/^[A-Z0-9]{6,10}$/i` to accept alphanumeric recovery codes
+- Created comprehensive MFA flow integration test covering full setup → verify → login → disable cycle
+
+### Test Results
+- ✅ All 30 integration tests passing (27 auth + 3 MFA)
+- ✅ MFA recovery code login works correctly
+- ✅ Token uniqueness guaranteed across rapid logins
+
+### Files Changed
+1. `services/auth-service/src/services/jwt.service.ts` - Added jti claim
+2. `services/auth-service/src/validators/auth.validator.ts` - Updated MFA code pattern
+3. `services/auth-service/tests/integration/mfa-flow.test.ts` - New comprehensive test
 
 ---
 
-Good luck! You've got this! 🚀
+**Created:** 2025-11-04 19:15
+**Target Resolution:** 2025-11-05
+**Actual Resolution:** 2025-11-04 20:16
+**Estimated Effort:** 2-4 hours
+**Actual Effort:** ~1 hour
+
+---
+
+Issue resolved ✅
