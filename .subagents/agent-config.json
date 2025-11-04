@@ -1,0 +1,771 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "version": "2.0",
+  "lastUpdated": "2025-11-04",
+  "project": {
+    "name": "PSA-Putzi Platform",
+    "description": "Professional Services Automation platform for MSPs in DACH region",
+    "repository": "https://github.com/samuelweirer/psa-putzi.git",
+    "mainBranch": "master",
+    "developBranch": "develop"
+  },
+  "agents": {
+    "mainAgent": {
+      "id": "main-agent",
+      "role": "Project Manager",
+      "type": "coordinator",
+      "aiModel": {
+        "name": "Claude Opus 4",
+        "id": "claude-opus-4-20250514",
+        "tier": "premium",
+        "capabilities": ["strategic-planning", "coordination", "quality-gates", "architecture-decisions"]
+      },
+      "authority": {
+        "level": "full",
+        "decisions": [
+          "architecture",
+          "technology-stack",
+          "timeline-adjustments",
+          "resource-allocation",
+          "quality-standards"
+        ]
+      },
+      "responsibilities": {
+        "strategic": [
+          "Overall project direction and timeline",
+          "Milestone planning and tracking",
+          "Resource allocation",
+          "Risk management",
+          "Stakeholder communication"
+        ],
+        "tactical": [
+          "Daily coordination of sub-agents",
+          "Blocker resolution and escalation",
+          "Cross-agent issue mediation",
+          "Quality gate approval",
+          "Integration oversight"
+        ],
+        "operational": [
+          "Review all handover documents",
+          "Approve merges to develop branch",
+          "Maintain project documentation",
+          "Run weekly sync meetings",
+          "Track KPIs and metrics"
+        ]
+      },
+      "schedule": {
+        "morning": {
+          "time": "09:00",
+          "tasks": [
+            "Review all agent status files",
+            "Check for critical blockers",
+            "Prioritize issues",
+            "Update project dashboard"
+          ]
+        },
+        "duringDay": {
+          "tasks": [
+            "Respond to escalations (< 2 hours)",
+            "Mediate conflicts",
+            "Approve handovers",
+            "Code review (high-risk changes)"
+          ]
+        },
+        "endOfDay": {
+          "time": "17:00",
+          "tasks": [
+            "Update project status",
+            "Plan tomorrow's coordination",
+            "Send updates to stakeholders"
+          ]
+        }
+      },
+      "sla": {
+        "escalationResponse": "< 1 hour",
+        "escalationResolution": "< 4 hours"
+      },
+      "metrics": {
+        "delivery": {
+          "onTimeMilestones": "> 90%",
+          "scopeCreep": "< 10%",
+          "budgetVariance": "< 5%"
+        },
+        "team": {
+          "agentSatisfaction": "> 4.0/5.0",
+          "blockerResolution": "< 4 hours",
+          "communicationClarity": "> 4.5/5.0"
+        },
+        "quality": {
+          "bugsToProduction": "< 5%",
+          "technicalDebt": "decreasing",
+          "testCoverage": "> 70%"
+        }
+      }
+    },
+    "seniorDevelopers": [
+      {
+        "id": "senior-1-infrastructure",
+        "name": "Infrastructure Architect",
+        "type": "senior-developer",
+        "aiModel": {
+          "name": "Claude Sonnet 4.5",
+          "id": "claude-sonnet-4-5-20250929",
+          "tier": "standard",
+          "capabilities": ["complex-logic", "security", "architecture", "optimization"]
+        },
+        "module": {
+          "id": "01-MODULE-Infrastructure",
+          "file": "implementation/01-MODULE-Infrastructure.md",
+          "name": "Infrastructure",
+          "complexity": 5,
+          "riskLevel": "critical"
+        },
+        "timeline": {
+          "weeks": "1-2",
+          "duration": "5 days",
+          "status": "completed"
+        },
+        "responsibilities": [
+          "PostgreSQL cluster setup and optimization",
+          "Redis caching strategy",
+          "RabbitMQ message architecture",
+          "Elasticsearch configuration",
+          "Monitoring infrastructure",
+          "Backup and recovery systems"
+        ],
+        "deliverables": [
+          "Production-ready database schemas",
+          "Optimized connection pooling",
+          "Scalable message queues",
+          "Health check infrastructure",
+          "Comprehensive .env.template"
+        ],
+        "mentoring": {
+          "mentees": ["junior-6-auxiliary"],
+          "focus": ["infrastructure-questions", "database-design", "performance-tuning"]
+        },
+        "sla": {
+          "responseTime": "< 2 hours",
+          "resolutionTime": "< 8 hours"
+        },
+        "metrics": {
+          "velocityConsistency": true,
+          "codeReviewTurnaround": "< 8 hours",
+          "mentoringHours": "> 3/week",
+          "bugsInOwnCode": "< 2%",
+          "patternAdherence": "> 95%"
+        }
+      },
+      {
+        "id": "senior-2-security",
+        "name": "Security Specialist",
+        "type": "senior-developer",
+        "aiModel": {
+          "name": "Claude Sonnet 4.5",
+          "id": "claude-sonnet-4-5-20250929",
+          "tier": "standard",
+          "capabilities": ["security", "authentication", "complex-logic", "architecture"]
+        },
+        "module": {
+          "id": "02-MODULE-Auth",
+          "file": "implementation/02-MODULE-Auth.md",
+          "name": "Authentication & RBAC",
+          "complexity": 5,
+          "riskLevel": "critical"
+        },
+        "timeline": {
+          "weeks": "2-3",
+          "duration": "7 days",
+          "status": "in-progress"
+        },
+        "responsibilities": [
+          "JWT authentication with RS256",
+          "User management system",
+          "Role-based access control",
+          "Password policy enforcement",
+          "Session management",
+          "Security audit logging",
+          "MFA/2FA implementation"
+        ],
+        "deliverables": [
+          "@psa/auth-middleware package",
+          "Secure JWT token generation",
+          "RBAC system (23 roles)",
+          "User/Role/Permission types",
+          "Security documentation"
+        ],
+        "mentoring": {
+          "mentees": ["all-agents"],
+          "focus": ["security-code-reviews", "auth-integration", "security-patterns"]
+        },
+        "sla": {
+          "responseTime": "< 2 hours",
+          "resolutionTime": "< 8 hours"
+        }
+      },
+      {
+        "id": "senior-3-backend",
+        "name": "Backend Architect",
+        "type": "senior-developer",
+        "aiModel": {
+          "name": "Claude Sonnet 4.5",
+          "id": "claude-sonnet-4-5-20250929",
+          "tier": "standard",
+          "capabilities": ["business-logic", "integrations", "complex-algorithms", "architecture"]
+        },
+        "module": {
+          "id": "04-05-MODULE-CRM-Tickets",
+          "files": ["implementation/04-MODULE-CRM.md", "implementation/05-MODULE-Tickets.md"],
+          "name": "CRM + Ticketing",
+          "complexity": 4,
+          "riskLevel": "high"
+        },
+        "timeline": {
+          "weeks": "3-8",
+          "duration": "17 days",
+          "status": "pending"
+        },
+        "responsibilities": [
+          "Customer relationship management",
+          "Contact and location management",
+          "Complete ticketing system",
+          "SLA calculation engine",
+          "Time tracking system",
+          "Email processing (SMTP/IMAP)",
+          "RabbitMQ event architecture"
+        ],
+        "deliverables": [
+          "CRM APIs (Customer, Contact, Location)",
+          "Ticket lifecycle management",
+          "SLA calculation (complex)",
+          "Email integration",
+          "Time tracking for billing",
+          "Notification system"
+        ],
+        "mentoring": {
+          "mentees": ["junior-5-frontend", "junior-6-auxiliary"],
+          "focus": ["api-design", "business-logic", "performance-optimization"]
+        },
+        "sla": {
+          "responseTime": "< 2 hours",
+          "resolutionTime": "< 8 hours"
+        }
+      },
+      {
+        "id": "senior-4-integration",
+        "name": "Integration Specialist",
+        "type": "senior-developer",
+        "aiModel": {
+          "name": "Claude Sonnet 4.5",
+          "id": "claude-sonnet-4-5-20250929",
+          "tier": "standard",
+          "capabilities": ["integrations", "api-design", "cross-cutting-concerns", "architecture"]
+        },
+        "module": {
+          "id": "03-MODULE-API-Gateway",
+          "file": "implementation/03-MODULE-API-Gateway.md",
+          "name": "API Gateway",
+          "complexity": 4,
+          "riskLevel": "high"
+        },
+        "timeline": {
+          "weeks": "3-4",
+          "duration": "6 days",
+          "status": "pending"
+        },
+        "responsibilities": [
+          "API Gateway implementation",
+          "Service routing and discovery",
+          "Rate limiting and throttling",
+          "Request/response logging",
+          "Error standardization",
+          "CORS configuration",
+          "API versioning strategy"
+        ],
+        "deliverables": [
+          "Express-based gateway",
+          "Route all backend services",
+          "Standardized error responses",
+          "OpenAPI documentation hub",
+          "Performance monitoring"
+        ],
+        "mentoring": {
+          "mentees": ["all-agents"],
+          "focus": ["api-design-patterns", "integration-practices", "troubleshooting"]
+        },
+        "sla": {
+          "responseTime": "< 2 hours",
+          "resolutionTime": "< 8 hours"
+        }
+      }
+    ],
+    "juniorDevelopers": [
+      {
+        "id": "junior-5-frontend",
+        "name": "Frontend Developer",
+        "type": "junior-developer",
+        "aiModel": {
+          "name": "Claude Haiku 4.5",
+          "id": "claude-haiku-4-5-20250929",
+          "tier": "fast",
+          "capabilities": ["ui-development", "rapid-iteration", "prototyping", "component-design"],
+          "benefits": ["faster-responses", "cost-effective", "good-for-ui", "learning-friendly"]
+        },
+        "module": {
+          "id": "13-MODULE-Frontend",
+          "file": "implementation/13-MODULE-Frontend.md",
+          "name": "React Frontend",
+          "complexity": 3,
+          "riskLevel": "low-medium"
+        },
+        "timeline": {
+          "weeks": "3-10",
+          "duration": "12 days active (parallel)",
+          "status": "pending"
+        },
+        "responsibilities": [
+          "React application setup (Vite + TypeScript)",
+          "Design system implementation (Tailwind + shadcn/ui)",
+          "Authentication UI",
+          "CRM pages (Customer list, details)",
+          "Ticket pages (List, detail, create)",
+          "Dashboard and analytics views",
+          "Responsive design"
+        ],
+        "deliverables": [
+          "Complete React application",
+          "Reusable component library",
+          "API integration layer",
+          "E2E tests (Playwright)",
+          "Mobile-responsive UI"
+        ],
+        "supervision": {
+          "reviewers": ["senior-2-security", "senior-3-backend", "main-agent"],
+          "focus": ["api-integrations", "auth-flows", "ui-ux-decisions"]
+        },
+        "growth": [
+          "Learn from senior code reviews",
+          "Experiment with UI patterns",
+          "Practice API integration",
+          "Build portfolio of components"
+        ],
+        "metrics": {
+          "tasksCompleted": "> 80% of planned",
+          "prSize": "< 500 lines",
+          "reworkRate": "< 20%",
+          "testCoverage": "> 60%",
+          "lintingErrors": "0"
+        }
+      },
+      {
+        "id": "junior-6-auxiliary",
+        "name": "Auxiliary Developer",
+        "type": "junior-developer",
+        "aiModel": {
+          "name": "Claude Haiku 4.5",
+          "id": "claude-haiku-4-5-20250929",
+          "tier": "fast",
+          "capabilities": ["crud-operations", "rapid-iteration", "prototyping", "learning"],
+          "benefits": ["cost-effective", "fast-iteration", "good-for-learning", "clear-specs"]
+        },
+        "module": {
+          "id": "06-07-08-MODULE-Billing-Projects-Assets",
+          "files": ["implementation/06-MODULE-Billing.md", "implementation/07-MODULE-Projects.md", "implementation/08-MODULE-Assets.md"],
+          "name": "Billing + Projects + Assets",
+          "complexity": 2,
+          "riskLevel": "low"
+        },
+        "timeline": {
+          "weeks": "10+",
+          "phase": "Phase 2",
+          "status": "pending"
+        },
+        "responsibilities": [
+          "Billing system (invoices, contracts)",
+          "Project management (tasks, milestones)",
+          "Asset management (inventory, licenses)",
+          "DATEV/BMD export functionality",
+          "Report generation"
+        ],
+        "deliverables": [
+          "Billing APIs and workflows",
+          "Project tracking system",
+          "Asset inventory management",
+          "Invoice generation",
+          "Export integrations"
+        ],
+        "supervision": {
+          "reviewers": ["senior-1-infrastructure", "senior-3-backend", "main-agent"],
+          "focus": ["database-schemas", "business-logic", "integrations"]
+        },
+        "growth": [
+          "Learn enterprise integrations",
+          "Practice API design",
+          "Understand billing logic",
+          "Work with external systems"
+        ],
+        "metrics": {
+          "tasksCompleted": "> 80% of planned",
+          "prSize": "< 500 lines",
+          "reworkRate": "< 20%",
+          "testCoverage": "> 60%",
+          "lintingErrors": "0"
+        }
+      }
+    ]
+  },
+  "escalation": {
+    "levels": [
+      {
+        "from": "Junior Developer",
+        "to": "Senior Developer (Same Domain)",
+        "trigger": "Technical Question / Blocker",
+        "responseTime": "< 2 hours",
+        "resolutionTime": "< 8 hours"
+      },
+      {
+        "from": "Senior Developer",
+        "to": "Senior Developer (Related Domain)",
+        "trigger": "Architecture / Cross-Module",
+        "responseTime": "< 4 hours",
+        "resolutionTime": "< 1 day"
+      },
+      {
+        "from": "Senior Developer",
+        "to": "Main Agent (Project Manager)",
+        "trigger": "Decision Required / Resource Issue",
+        "responseTime": "< 1 hour",
+        "resolutionTime": "< 4 hours"
+      },
+      {
+        "from": "Main Agent",
+        "to": "Product Owner / CTO",
+        "trigger": "Stakeholder Impact",
+        "responseTime": "Immediate",
+        "resolutionTime": "Varies"
+      }
+    ]
+  },
+  "workflows": {
+    "codeReview": {
+      "steps": [
+        {
+          "step": 1,
+          "actor": "Junior Developer",
+          "action": "Create PR"
+        },
+        {
+          "step": 2,
+          "actor": "Junior Developer",
+          "action": "Self-review checklist"
+        },
+        {
+          "step": 3,
+          "actor": "Junior Developer",
+          "action": "Assign to Senior Developer"
+        },
+        {
+          "step": 4,
+          "actor": "Senior Developer",
+          "action": "Review code (< 8 hours)"
+        },
+        {
+          "step": 5,
+          "actor": "Senior Developer",
+          "action": "Provide feedback"
+        },
+        {
+          "step": 6,
+          "actor": "Senior Developer",
+          "action": "Approve or request changes"
+        },
+        {
+          "step": 7,
+          "actor": "Senior Developer",
+          "action": "Assign to PM if architectural"
+        },
+        {
+          "step": 8,
+          "actor": "Main Agent (PM)",
+          "action": "Final approval (if needed)"
+        },
+        {
+          "step": 9,
+          "actor": "Main Agent (PM)",
+          "action": "Merge to develop"
+        }
+      ]
+    },
+    "architectureDecision": {
+      "steps": [
+        {
+          "step": 1,
+          "actor": "Any Developer",
+          "action": "Create issue in .subagents/issues/"
+        },
+        {
+          "step": 2,
+          "actor": "Any Developer",
+          "action": "Describe problem and options"
+        },
+        {
+          "step": 3,
+          "actor": "Senior Developer(s)",
+          "action": "Discuss and recommend"
+        },
+        {
+          "step": 4,
+          "actor": "Senior Developer(s)",
+          "action": "Document pros/cons"
+        },
+        {
+          "step": 5,
+          "actor": "Main Agent (PM)",
+          "action": "Make final decision"
+        },
+        {
+          "step": 6,
+          "actor": "Main Agent (PM)",
+          "action": "Document in ADR"
+        },
+        {
+          "step": 7,
+          "actor": "Main Agent (PM)",
+          "action": "Update relevant documentation"
+        }
+      ]
+    },
+    "emergencyHotfix": {
+      "steps": [
+        {
+          "step": 1,
+          "actor": "Any Developer",
+          "action": "Create critical issue (🔴)"
+        },
+        {
+          "step": 2,
+          "actor": "Any Developer",
+          "action": "Notify all agents"
+        },
+        {
+          "step": 3,
+          "actor": "Senior Developer (owner)",
+          "action": "Assess impact (< 30 min)",
+          "sla": "< 30 minutes"
+        },
+        {
+          "step": 4,
+          "actor": "Senior Developer (owner)",
+          "action": "Create hotfix branch"
+        },
+        {
+          "step": 5,
+          "actor": "Senior Developer (owner)",
+          "action": "Implement fix"
+        },
+        {
+          "step": 6,
+          "actor": "Senior Developer (owner)",
+          "action": "Get peer review"
+        },
+        {
+          "step": 7,
+          "actor": "Main Agent (PM)",
+          "action": "Approve hotfix (< 1 hour)",
+          "sla": "< 1 hour"
+        },
+        {
+          "step": 8,
+          "actor": "Main Agent (PM)",
+          "action": "Deploy to production"
+        },
+        {
+          "step": 9,
+          "actor": "Main Agent (PM)",
+          "action": "Schedule post-mortem"
+        }
+      ]
+    }
+  },
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "Infrastructure Complete",
+      "week": 2,
+      "status": "completed",
+      "criteria": [
+        "PostgreSQL running",
+        "Redis running",
+        "RabbitMQ running",
+        "Elasticsearch running",
+        "Health checks working",
+        ".env.template complete",
+        "Agent 1 → Agent 2 handover"
+      ]
+    },
+    {
+      "id": "M2",
+      "name": "Auth Complete",
+      "week": 3,
+      "status": "in-progress",
+      "criteria": [
+        "JWT authentication working",
+        "User management APIs",
+        "RBAC implemented",
+        "Auth middleware package published",
+        "Agent 2 → Agent 3 handover"
+      ]
+    },
+    {
+      "id": "M3",
+      "name": "Gateway Complete",
+      "week": 4,
+      "status": "pending",
+      "criteria": [
+        "API Gateway routing all services",
+        "Rate limiting active",
+        "Auth integrated",
+        "Error handling standardized",
+        "Agent 3 → Agent 4 handover"
+      ]
+    },
+    {
+      "id": "M4",
+      "name": "CRM Complete",
+      "week": 6,
+      "status": "pending",
+      "criteria": [
+        "Customer management working",
+        "Contact management working",
+        "Location management working",
+        "Search & filters functional",
+        "RabbitMQ events emitting",
+        "Agent 4 → Agent 5 handover"
+      ]
+    },
+    {
+      "id": "M5",
+      "name": "Tickets Complete",
+      "week": 9,
+      "status": "pending",
+      "criteria": [
+        "Ticket lifecycle working",
+        "SLA calculation accurate",
+        "Email integration functional",
+        "Time tracking working",
+        "Agent 5 → Agent 6 handover"
+      ]
+    },
+    {
+      "id": "M6",
+      "name": "MVP Alpha",
+      "week": 10,
+      "status": "pending",
+      "criteria": [
+        "All services integrated",
+        "Frontend functional",
+        "End-to-end tests passing",
+        "Ready for pilot testing"
+      ]
+    }
+  ],
+  "communication": {
+    "synchronous": {
+      "dailyStandup": {
+        "time": "09:00-09:15",
+        "participants": "All agents",
+        "format": "Status update + blockers"
+      },
+      "weeklyPlanning": {
+        "day": "Monday",
+        "time": "10:00-11:00",
+        "participants": "All agents",
+        "format": "Sprint planning"
+      },
+      "weeklyRetro": {
+        "day": "Friday",
+        "time": "16:00-17:00",
+        "participants": "All agents",
+        "format": "Retrospective"
+      },
+      "officeHours": {
+        "mainAgent": "09:00-17:00 (always available)",
+        "seniorDevs": "10:00-16:00 (guaranteed response)",
+        "juniorDevs": "Flexible (with notice)"
+      }
+    },
+    "asynchronous": {
+      "primary": ".subagents/ folder system",
+      "secondary": "Git comments, PR discussions",
+      "emergency": "Direct PM escalation"
+    },
+    "responseExpectations": {
+      "critical": "< 4 hours",
+      "important": "< 24 hours",
+      "normal": "< 48 hours"
+    }
+  },
+  "qualityStandards": {
+    "definitionOfDone": [
+      "All features implemented per spec",
+      "Tests written (unit + integration, ≥70%)",
+      "All tests pass",
+      "Code linted (0 errors, 0 warnings)",
+      "TypeScript compiles (0 errors)",
+      "API documented (OpenAPI)",
+      "README.md complete",
+      "Handover document complete",
+      "Status file finalized",
+      "Next agent acknowledges",
+      "Main agent approves",
+      "Merged to develop"
+    ],
+    "testCoverage": {
+      "minimum": 70,
+      "target": 80,
+      "critical": 90
+    },
+    "codeReview": {
+      "required": true,
+      "minimumReviewers": 1,
+      "seniorReviewRequired": true,
+      "pmApprovalForArchitecture": true
+    }
+  },
+  "tooling": {
+    "versionControl": {
+      "system": "Git",
+      "platform": "GitHub",
+      "repository": "samuelweirer/psa-putzi"
+    },
+    "cicd": {
+      "platform": "GitHub Actions",
+      "status": "TBD"
+    },
+    "monitoring": {
+      "tools": ["Zabbix", "Prometheus", "Grafana"],
+      "logs": "ELK Stack"
+    },
+    "communication": {
+      "recommended": ["Slack", "Microsoft Teams"],
+      "documentation": "Markdown in repository"
+    }
+  },
+  "fileStructure": {
+    "coordination": ".subagents/",
+    "status": ".subagents/status/",
+    "handovers": ".subagents/handovers/",
+    "issues": ".subagents/issues/",
+    "shared": ".subagents/shared/",
+    "templates": "templates/",
+    "implementation": "implementation/",
+    "services": "services/",
+    "packages": "packages/",
+    "bduf": "BDUF/"
+  },
+  "templates": {
+    "statusUpdate": "templates/TEMPLATE-status-update.md",
+    "handover": "templates/TEMPLATE-handover.md",
+    "issue": "templates/TEMPLATE-issue.md"
+  }
+}
