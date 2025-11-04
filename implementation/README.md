@@ -2,6 +2,30 @@
 
 This folder contains detailed implementation guides for each module/service of the PSA-Platform. Each guide is designed to be used by sub-agents for autonomous development.
 
+## 🚀 Deployment Strategy
+
+**IMPORTANT:** For MVP development (Phase 1-2), all Node.js application services will run on a **single LXC container** (Container 150: psa-app) to simplify deployment and reduce resource overhead.
+
+See **[00-DEPLOYMENT-STRATEGY.md](00-DEPLOYMENT-STRATEGY.md)** for complete details on:
+- MVP deployment (single container with PM2)
+- Production deployment (separate containers per service)
+- Migration path from MVP to production
+- Shared components and service communication
+
+### Container Layout (MVP)
+
+| Container | Service | CPU | RAM | IP |
+|-----------|---------|-----|-----|----|
+| 100 | PostgreSQL | 8 | 32GB | 10.0.30.10 |
+| 110 | Redis | 2 | 4GB | 10.0.20.20 |
+| 120 | RabbitMQ | 2 | 4GB | 10.0.20.30 |
+| 130 | Elasticsearch | 4 | 16GB | 10.0.20.40 |
+| **150** | **All Node.js Services** | **8** | **16GB** | **10.0.20.50** |
+
+All application services (Auth, API Gateway, CRM, Tickets, Billing, etc.) run on Container 150 with different ports (3000-3070), managed by PM2.
+
+---
+
 ## Module Overview
 
 ### Phase 1: MVP (Months 1-4)

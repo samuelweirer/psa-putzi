@@ -3,8 +3,10 @@
 **Module:** Authentication & Authorization (psa-auth)
 **Phase:** 1 (MVP)
 **Priority:** P0 (Critical - Blocker for all other services)
-**Container-ID:** 110
+**Port:** 3010
 **Dependencies:** psa-db-master (PostgreSQL)
+
+> **📦 Deployment Note:** For MVP (Phase 1-2), this service runs on **Container 150 (psa-app)** alongside all other Node.js services, managed by PM2. See [00-DEPLOYMENT-STRATEGY.md](00-DEPLOYMENT-STRATEGY.md) for details.
 
 ---
 

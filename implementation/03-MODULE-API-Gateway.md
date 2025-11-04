@@ -3,8 +3,10 @@
 **Module:** API Gateway & Routing
 **Phase:** 1 (MVP)
 **Priority:** P0 (Critical - Entry point for all API requests)
-**Container-ID:** 120
+**Port:** 3000
 **Dependencies:** psa-auth (Authentication), psa-infrastructure (Redis)
+
+> **📦 Deployment Note:** For MVP (Phase 1-2), this service runs on **Container 150 (psa-app)** alongside all other Node.js services, managed by PM2. See [00-DEPLOYMENT-STRATEGY.md](00-DEPLOYMENT-STRATEGY.md) for details.
 
 ---
 
