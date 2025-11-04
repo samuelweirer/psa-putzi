@@ -252,4 +252,69 @@ export class UserModel {
       total,
     };
   }
+
+  /**
+   * Find user by OAuth provider
+   */
+  static async findByOAuthProvider(provider: string, providerId: string): Promise<User | null> {
+    const result = await query(
+      'SELECT * FROM users WHERE oauth_provider = $1 AND oauth_provider_id = $2 AND deleted_at IS NULL',
+      [provider, providerId]
+    );
+
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Link OAuth provider to existing user
+   */
+  static async linkOAuthProvider(
+    userId: string,
+    provider: string,
+    providerId: string
+  ): Promise<User | null> {
+    const result = await query(
+      `UPDATE users
+       SET oauth_provider = $2, oauth_provider_id = $3, updated_at = NOW()
+       WHERE id = $1 AND deleted_at IS NULL
+       RETURNING *`,
+      [userId, provider, providerId]
+    );
+
+    logger.info('OAuth provider linked to user', { userId, provider });
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Create new user from OAuth provider
+   */
+  static async createOAuthUser(userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    oauthProvider: string;
+    oauthProviderId: string;
+  }): Promise<User> {
+    const result = await query(
+      `INSERT INTO users (
+        email, first_name, last_name, oauth_provider, oauth_provider_id,
+        language, timezone, is_active, is_verified, role
+      ) VALUES ($1, $2, $3, $4, $5, 'de', 'Europe/Vienna', true, true, 'user')
+      RETURNING *`,
+      [
+        userData.email,
+        userData.firstName,
+        userData.lastName,
+        userData.oauthProvider,
+        userData.oauthProviderId,
+      ]
+    );
+
+    logger.info('OAuth user created', {
+      userId: result.rows[0].id,
+      email: userData.email,
+      provider: userData.oauthProvider,
+    });
+    return result.rows[0];
+  }
 }
