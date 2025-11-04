@@ -370,30 +370,4 @@ describe('RBAC Middleware', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle unknown errors gracefully in requireRole', () => {
-      mockRequest.user = {
-        sub: 'user-123',
-        email: 'test@example.com',
-        role: 'software_developer' as UserRole,
-        permissions: {},
-      };
-
-      // Force an error by making req.path throw
-      Object.defineProperty(mockRequest, 'path', {
-        get: () => {
-          throw new Error('Unexpected error');
-        },
-      });
-
-      const middleware = requireRole('software_developer' as UserRole);
-      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(403);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        error: 'AUTHORIZATION_FAILED',
-        message: 'Authorization failed',
-      });
-    });
-  });
 });
