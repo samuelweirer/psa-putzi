@@ -33,6 +33,49 @@ All technical design documentation is in the **`BDUF/`** folder:
 - **BDUF/BDUF-Chapter14.md** - Testing strategy
 - **BDUF/BDUF-Chapter15.md** - Development workflow
 
+### Implementation Guides
+All implementation documentation is in the **`implementation/`** folder:
+- **implementation/README.md** - Overview and how to use module guides
+- **implementation/00-DEPLOYMENT-STRATEGY.md** - Deployment strategy (single container → production)
+- **implementation/01-MODULE-Infrastructure.md** - PostgreSQL, Redis, RabbitMQ, Elasticsearch setup
+- **implementation/02-MODULE-Auth.md** - Authentication & Authorization (JWT, MFA, RBAC, SSO)
+- **implementation/03-MODULE-API-Gateway.md** - API Gateway & Routing
+- **implementation/04-MODULE-CRM.md** - Customer Relationship Management
+- **implementation/05-MODULE-Tickets.md** - Ticketing & Service Desk
+
+**Deployment Note:** For MVP, everything runs on a **single LXC container** (Container 200: psa-all-in-one). See deployment strategy document for scaling path.
+
+### Sub-Agent Coordination System
+Documentation for working with multiple Claude Code sub-agents in parallel:
+
+**Main Documentation** (`AGENTS/` folder):
+- **AGENTS/README.md** - Overview of sub-agent system
+- **AGENTS/MASTER-INDEX.md** - Complete index of all agent resources
+- **AGENTS/QUICK-START.md** - Quick start guide for sub-agents
+- **AGENTS/SUB-AGENT-CONFIG.md** - Configuration guide for sub-agents
+- **AGENTS/SUBAGENTS-README.md** - Detailed sub-agent system documentation
+- **AGENTS/GIT-INTEGRATION-GUIDE.md** - Git workflow for parallel agent work
+
+**Templates** (`templates/` folder):
+- **templates/TEMPLATE-handover.md** - Handover template between agents
+- **templates/TEMPLATE-issue.md** - Issue reporting template
+- **templates/TEMPLATE-status-update.md** - Status update template
+
+**Shared Resources** (`.subagents/` folder):
+- **.subagents/README.md** - Sub-agent system overview
+- **.subagents/shared/** - Shared code, types, constants (TypeScript)
+  - `.env.template` - Environment variables template
+  - `constants.ts` - Shared constants
+  - `errors.ts` - Shared error definitions
+  - `types.ts` - Shared TypeScript types
+
+**When to use Sub-Agents:**
+- Multiple modules need to be developed in parallel
+- Large tasks that can be split into independent subtasks
+- Each sub-agent should work on a separate feature branch
+- Use handover templates when passing work between agents
+- See `AGENTS/QUICK-START.md` for step-by-step instructions
+
 ## Architecture Highlights
 
 ### Technology Stack
@@ -165,11 +208,14 @@ cat BDUF/BDUF-Chapter3-Billing-Rate-Fix.md
 
 ## Project Status
 
-**Current Phase:** Requirements & Design (BDUF)
-- ✅ BRD complete
-- ✅ BDUF documentation complete (15 chapters)
+**Current Phase:** Implementation Planning & Setup
+- ✅ BRD complete (Business Requirements Document)
+- ✅ BDUF documentation complete (20 chapters + Appendix)
 - ✅ Data model defined and validated
-- ⏳ Implementation not yet started
+- ✅ Implementation guides created (5 modules for Phase 1 MVP)
+- ✅ Sub-agent coordination system setup
+- ✅ Deployment strategy defined (single container → production)
+- ⏳ Implementation starting (ready for parallel development)
 
 ## Important Notes
 
@@ -182,12 +228,33 @@ cat BDUF/BDUF-Chapter3-Billing-Rate-Fix.md
 ## Future Claude Instances
 
 When working on this project:
-1. **Always start with BDUF/README.md** to understand the chapter structure
-2. **Chapter 3 (data model) is the most critical** - read it thoroughly
-3. The billing rate model is complex - refer to BDUF-Chapter3-Billing-Rate-Fix.md
-4. This is a German/DACH market product - respect localization requirements
-5. Security and compliance (DSGVO) are non-negotiable
-6. The architecture is LXC-based on Proxmox, not Docker
+
+### First Time Setup
+1. **Read this CLAUDE.md file completely** - Start here!
+2. **Check BDUF/README.md** to understand the architecture
+3. **Review implementation/README.md** for deployment and module guides
+4. **If working with other agents:** Read AGENTS/QUICK-START.md
+
+### Understanding the System
+1. **Data model (CRITICAL):** BDUF/BDUF-Chapter3.md - Read thoroughly
+2. **Billing rate model:** BDUF-Chapter3-Billing-Rate-Fix.md - Complex, study carefully
+3. **Deployment strategy:** implementation/00-DEPLOYMENT-STRATEGY.md - Single container MVP
+4. **Module you're working on:** implementation/XX-MODULE-YourModule.md
+
+### Working with Sub-Agents
+If you're part of a parallel development effort:
+1. Read **AGENTS/QUICK-START.md** for coordination guidelines
+2. Create your feature branch: `feature/module-name`
+3. Use templates from `templates/` folder for handovers and status updates
+4. Check **AGENTS/GIT-INTEGRATION-GUIDE.md** for git workflow
+5. Update your status regularly using templates
+
+### Important Constraints
+1. This is a **German/DACH market product** - respect localization requirements
+2. **Security and compliance (DSGVO)** are non-negotiable
+3. The architecture is **LXC-based on Proxmox**, not Docker
+4. **Multi-tenancy:** All customer data must respect tenant_id isolation
+5. **Billing rates:** Use the rate resolution hierarchy - don't take shortcuts!
 
 ## Git Workflow
 
@@ -203,6 +270,6 @@ For questions about architecture decisions, consult the BDUF documentation first
 
 ---
 
-**Last Updated:** 2025-11-03
-**Version:** 1.0
-**Status:** Documentation Complete, Implementation Pending
+**Last Updated:** 2025-11-04
+**Version:** 2.0
+**Status:** Implementation Ready - Sub-Agent Coordination System Active
