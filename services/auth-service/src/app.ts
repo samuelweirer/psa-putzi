@@ -6,11 +6,13 @@ import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import passport from 'passport';
+import swaggerUi from 'swagger-ui-express';
 import authRoutes from './routes/auth.routes';
 import oauthRoutes from './routes/oauth.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiRateLimit } from './middleware/rate-limit.middleware';
 import { oauthService } from './services/oauth.service';
+import { swaggerSpec } from './swagger';
 import logger from './utils/logger';
 
 export function createApp(): Express {
@@ -57,6 +59,18 @@ export function createApp(): Express {
       version: '1.0.0',
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // API Documentation (Swagger UI)
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'PSA Auth Service API Documentation',
+  }));
+
+  // Swagger JSON endpoint
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
   });
 
   // Routes

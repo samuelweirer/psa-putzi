@@ -173,8 +173,6 @@ export interface ErrorResponse {
 // Extend Express Request type to include user
 declare global {
   namespace Express {
-    interface Request {
-      user?: JWTPayload;
-    }
+    interface User extends JWTPayload {}
   }
 }
