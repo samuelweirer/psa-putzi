@@ -25,7 +25,13 @@ export class JWTService {
    * Generate refresh token
    */
   static generateRefreshToken(payload: JWTPayload): string {
-    return jwt.sign(payload, config.jwt.refreshSecret, {
+    // Add unique jti (JWT ID) to prevent duplicate token hashes
+    const tokenPayload = {
+      ...payload,
+      jti: crypto.randomUUID(), // Unique identifier for this token
+    };
+
+    return jwt.sign(tokenPayload, config.jwt.refreshSecret, {
       expiresIn: config.jwt.refreshExpiry as string,
       issuer: 'psa-platform',
       audience: 'psa-api',

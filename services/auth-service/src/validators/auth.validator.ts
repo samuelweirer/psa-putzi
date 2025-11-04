@@ -46,8 +46,8 @@ export const loginSchema = Joi.object({
   password: Joi.string().required().messages({
     'any.required': 'Password is required'
   }),
-  mfa_code: Joi.string().pattern(/^\d{6}$/).optional().messages({
-    'string.pattern.base': 'MFA code must be 6 digits'
+  mfa_code: Joi.string().pattern(/^[A-Z0-9]{6,10}$/i).optional().messages({
+    'string.pattern.base': 'MFA code must be 6-10 alphanumeric characters'
   })
 });
 
@@ -104,8 +104,8 @@ export const mfaDisableSchema = Joi.object({
   password: Joi.string().required().messages({
     'any.required': 'Password is required'
   }),
-  code: Joi.string().pattern(/^\d{6}$/).required().messages({
-    'string.pattern.base': 'MFA code must be 6 digits',
+  code: Joi.string().pattern(/^[A-Z0-9]{6,10}$/i).required().messages({
+    'string.pattern.base': 'MFA code must be 6-10 alphanumeric characters',
     'any.required': 'MFA code is required'
   })
 });
