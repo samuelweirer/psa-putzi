@@ -1,9 +1,21 @@
 # Active Sub-Agent Assignments
 
-**Last Updated:** 2025-11-04 20:30 UTC
+**Last Updated:** 2025-11-04 21:10 UTC
 **Main Agent:** Project Manager (Claude Opus 4)
-**Project Phase:** Sprint 2 - Auth Module Development
+**Project Phase:** Sprint 2 - Auth Module + Frontend Development (Parallel)
+**Unified Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG` (both agents)
 **Agent Config:** `.subagents/agent-config.json`
+
+## 🔄 Branch Strategy Update
+
+**Previous:** Each agent on separate branch → merge conflicts later
+**Current:** Both agents on unified branch `claude/session-011CUa86VGPkHjf5rHUmwfvG`
+
+**Benefits:**
+- ✅ Always in sync with latest code
+- ✅ Test integration immediately
+- ✅ No merge conflicts
+- ✅ Cleaner git history
 
 ---
 
@@ -73,9 +85,9 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
 ---
 
 #### AUTH-001: Authentication & Authorization Module
-- **Status:** 🟢 75% COMPLETE - Core features done, tests passing, OAuth2 pending
-- **Agent Type:** Senior Developer 2 (Security Specialist) + Main Agent (PM)
-- **AI Model:** Claude Sonnet 4.5 (initial) + Opus 4 (completion)
+- **Status:** 🟢 80% COMPLETE - OAuth2 integrated, tests passing, docs pending
+- **Agent Type:** Senior Developer 2 (Security Specialist)
+- **AI Model:** Claude Sonnet 4.5
 - **Priority:** P0 (Blocker for all other modules)
 - **Complexity:** ⭐⭐⭐⭐⭐ Very High
 - **Risk Level:** Critical (Security)
@@ -83,25 +95,28 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
 - **Current Week:** Week 1 of 3-4 (Sprint 2)
 - **Handover Document:** `.subagents/handovers/02-auth-module-handover.md`
 - **Implementation Guide:** `implementation/02-MODULE-Auth.md`
-- **Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG`
-- **Code Location:** `services/auth-service/` (21 TypeScript files)
+- **Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG` ⬅️ UNIFIED BRANCH (shared with frontend)
+- **Code Location:** `services/auth-service/` (25 TypeScript files + 1 migration)
 - **Dependencies:** ✅ INFRA-001 (completed)
 
-**✅ Completed Tasks (Week 1) - 75% Complete:**
+**✅ Completed Tasks (Week 1) - 80% Complete:**
   - ✅ Project structure created (TypeScript + Express)
-  - ✅ All 21 source files fully implemented
+  - ✅ All 25 source files fully implemented
   - ✅ ESLint 9 flat config + Prettier configured
   - ✅ Vitest test framework setup
-  - ✅ npm dependencies installed (38 packages, 0 deprecation warnings)
+  - ✅ npm dependencies installed (51 packages including OAuth)
   - ✅ Local authentication (email/password) - COMPLETE
   - ✅ JWT token management (access + refresh with unique jti) - COMPLETE
   - ✅ Multi-Factor Authentication (TOTP + recovery codes) - COMPLETE
   - ✅ Password management (reset, change, validation) - COMPLETE
   - ✅ User profile management - COMPLETE
+  - ✅ **OAuth2 Google integration - COMPLETE** ⬅️ NEW!
+  - ✅ **OAuth2 Microsoft integration - COMPLETE** ⬅️ NEW!
+  - ✅ **OAuth database migration applied** ⬅️ NEW!
   - ✅ RBAC middleware with 23 roles - COMPLETE
   - ✅ Rate limiting (Redis-based) - COMPLETE
   - ✅ Error handling middleware - COMPLETE
-  - ✅ All 12 API endpoints implemented - COMPLETE
+  - ✅ All 16 API endpoints implemented - COMPLETE (12 local + 4 OAuth)
   - ✅ Service builds successfully (TypeScript compilation) - COMPLETE
   - ✅ Service starts and connects to PostgreSQL - COMPLETE
   - ✅ .env configuration complete - COMPLETE
@@ -117,41 +132,50 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
   - **JWT Service**: 125 lines - token generation with unique jti, verification, hashing
   - **Password Service**: 97 lines - bcrypt hashing, policy validation
   - **MFA Service**: 89 lines - TOTP setup, QR codes, recovery codes
-  - **User Model**: 256 lines - CRUD, MFA management, account locking, pagination
+  - **User Model**: 318 lines - CRUD, MFA, OAuth methods, account locking, pagination
   - **Refresh Token Model**: 98 lines - token lifecycle, cleanup
-  - **Auth Controller**: 349 lines - all 12 endpoints
-  - **Auth Routes**: 45 lines - all routes with validation
+  - **Auth Controller**: 349 lines - all 12 local auth endpoints
+  - **OAuth Controller**: 97 lines - all 4 OAuth endpoints (NEW!)
+  - **OAuth Service**: 161 lines - Google + Microsoft strategies (NEW!)
+  - **Auth Routes**: 45 lines - all local auth routes
+  - **OAuth Routes**: 38 lines - all OAuth routes (NEW!)
   - **Middleware**: 4 files (auth, error, rate-limit, RBAC)
+  - **Migrations**: 2 files (initial schema + OAuth columns)
   - **Tests**: 137 tests passing (107 unit + 30 integration)
 
-**🔧 Recent Fixes (2025-11-04):**
-  - ✅ Fixed duplicate refresh token hash issue (added unique jti claim)
-  - ✅ Updated MFA validator to accept alphanumeric recovery codes
-  - ✅ Created comprehensive MFA flow integration test (247 lines)
-  - ✅ All 137 tests passing (100% pass rate)
+**🔧 Recent Work (2025-11-04 PM):**
+  - ✅ OAuth2 Google integration complete (passport strategy)
+  - ✅ OAuth2 Microsoft integration complete (passport strategy)
+  - ✅ Database migration for OAuth columns (oauth_provider, oauth_provider_id)
+  - ✅ User model OAuth methods (find, link, create OAuth users)
+  - ✅ 4 new OAuth API endpoints (initiate + callback for each provider)
+  - ✅ Integrated with frontend branch (unified development)
+  - ✅ All commits pushed to GitHub
 
-**⚪ Pending Tasks (Week 2):**
+**⚪ Remaining Tasks (20%):**
   - ⚪ Increase test coverage from 69% → 80% (need +11%)
     - Focus: RBAC middleware tests (currently 0%)
+    - Focus: OAuth integration tests
     - Focus: Controller edge cases
     - Estimated: 4-6 hours
-  - ⚪ OAuth2 integration (Google, Microsoft SSO) - not started
-  - ⚪ API documentation (Swagger/OpenAPI) - not created
-  - ⚪ Production deployment to PM2 - pending OAuth2
+  - ⚪ API documentation (Swagger/OpenAPI) - not created (2-3 hours)
+  - ⚪ Production deployment to PM2 - ready after docs complete
 
-**📊 Progress:** 75% complete (↑ from 70%)
+**📊 Progress:** 80% complete (↑ from 75%)
 - **Sprint Status:** On track for Week 3 completion
-- **Test Status:** ✅ All 137 tests passing
-- **Build Status:** ✅ Clean (0 errors)
+- **Test Status:** ✅ All 137 tests passing (OAuth tests pending)
+- **Build Status:** ✅ Clean (0 TypeScript errors in OAuth code)
 - **Blockers:** ✅ All resolved
+- **Branch:** ✅ Unified with frontend agent
 
 **Deliverable:** Production-ready auth service with JWT, MFA, RBAC, OAuth2
 
 **Next Steps:**
-  1. ⚪ Increase test coverage to 80% - Week 2 (Junior or Senior)
-  2. ⚪ Implement OAuth2 integration - Week 2-3 (Senior)
-  3. ⚪ Create Swagger API docs - Week 3 (Junior or Senior)
-  4. ⚪ Deploy to PM2 on Container 200 - Week 3 (Senior)
+  1. ⚪ Increase test coverage to 80% - Week 2 (remaining 4-6 hours)
+  2. ⚪ Create Swagger API docs - Week 2 (2-3 hours)
+  3. ⚪ Deploy to PM2 on Container 200 - Week 3
+  4. ✅ OAuth2 integration - COMPLETE!
+  5. Frontend integration - In Progress (parallel with Junior-5)
   5. Enables: GATEWAY-001, CRM-001, TICKETS-001
 
 ---
@@ -238,26 +262,49 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
 ### 🟡 P2 - Medium Priority (UI Development - Can Run in Parallel)
 
 #### FRONTEND-001: React Application
-- **Status:** ⚪ Pending - Can start Week 3 (parallel with backend)
+- **Status:** 🟡 15% COMPLETE - Project setup done, auth UI in progress
 - **Agent Type:** Junior Developer 5 (Frontend Developer)
-- **AI Model:** Claude Haiku 4.5
-- **Priority:** P2 (UI can be developed in parallel)
+- **AI Model:** Claude Haiku 4.5 (parallel with Senior-2)
+- **Priority:** P0 (Parallel development with AUTH-001)
 - **Complexity:** ⭐⭐⭐ Medium
 - **Risk Level:** Low-Medium
-- **Estimated Duration:** Weeks 3-10 (12 days active, parallel)
+- **Estimated Duration:** Weeks 1-10 (Started: 2025-11-04, parallel)
 - **Module Guide:** `implementation/13-MODULE-Frontend.md`
-- **Branch:** `feature/frontend`
-- **Dependencies:** AUTH-001 (for login UI), backend APIs as they're ready
-- **Tasks:**
-  - React + Vite + TypeScript setup
-  - Design system (Tailwind + shadcn/ui)
-  - Authentication UI (login, register, MFA)
+- **Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG` ⬅️ UNIFIED BRANCH (shared with auth)
+- **Code Location:** `frontend/` (React + Vite + TypeScript project)
+- **Dependencies:** ✅ AUTH-001 (16 endpoints ready for integration)
+**✅ Completed Tasks (Week 1 - Day 1):**
+  - ✅ React + Vite + TypeScript project initialized
+  - ✅ Tailwind CSS configured for styling
+  - ✅ Project structure organized (components, pages, contexts, lib)
+  - ✅ API client configured (axios, connects to localhost:3001)
+  - ✅ Type definitions created (auth.types.ts)
+  - ✅ Environment configuration (.env, .env.example)
+  - ✅ ESLint + package.json setup
+
+**⚪ In Progress (Week 1 - Day 2):**
+  - 🔄 Login page UI implementation
+  - ⚪ AuthContext for global auth state
+  - ⚪ Register page
+  - ⚪ MFA verification UI
+  - ⚪ Password reset flow
+  - ⚪ Protected routes component
+
+**📊 Progress:** 15% complete (setup phase)
+- **Sprint Status:** On track with Day 1 plan
+- **Next:** Build Login page with real API integration
+- **Branch:** ✅ Unified with auth backend (real-time sync)
+
+**Remaining Tasks:**
+  - Design system components (shadcn/ui)
+  - Authentication UI completion (login, register, MFA)
   - CRM pages (Customer list, details, create)
   - Ticket pages (List, detail, create)
   - Dashboard and analytics views
   - Responsive design (mobile-first)
   - E2E tests (Playwright)
-- **Deliverable:** Complete React application with responsive UI
+
+**Deliverable:** Complete React application with responsive UI
 - **Supervision:**
   - Senior-2 (Security) reviews auth flows
   - Senior-3 (Backend) reviews API integrations
