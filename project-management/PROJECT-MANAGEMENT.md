@@ -485,6 +485,67 @@ Closes #123
 
 ---
 
+### 🔴 MANDATORY: Documentation & Tracking Requirements
+
+**All developers (including AI agents) MUST follow these requirements. NO EXCEPTIONS.**
+
+#### Every Code Change Must Be Documented
+
+When making ANY code change:
+
+1. **Commit Message Requirements:**
+   - ❌ BAD: "update files", "fix bug", "changes"
+   - ✅ GOOD: "feat(auth): Add MFA support with TOTP"
+   - Include WHAT changed, WHY it changed, and HOW it impacts the system
+   - Reference issue numbers when applicable
+   - Use conventional commits format (see above)
+
+2. **Todo List Management:**
+   - Use TodoWrite tool to track all work
+   - Update status as you progress (pending → in_progress → completed)
+   - Break large tasks into smaller trackable items
+   - Clean up completed todos before ending session
+
+3. **Status Updates:**
+   - Update `.subagents/ACTIVE-ASSIGNMENTS.md` with progress
+   - Create weekly status reports: `.subagents/STATUS-{module}-week{N}.md`
+   - Update `CLAUDE.md` project status when reaching milestones
+   - Document blockers immediately
+
+4. **Documentation Updates:**
+   - Update README.md when adding features
+   - Update API documentation (Swagger/OpenAPI)
+   - Add/update code comments (JSDoc format)
+   - Update module implementation guides if approach changes
+
+5. **Roadmap & Planning:**
+   - Update `SPRINT-PLAN.md` if sprint goals change
+   - Update Definition of Done if requirements change
+   - Document scope changes
+   - Keep milestone tracking current
+
+#### Before Ending Any Session - Checklist
+
+- [ ] All code committed with descriptive messages
+- [ ] Todo list reflects current state
+- [ ] ACTIVE-ASSIGNMENTS.md updated with progress
+- [ ] Blockers documented
+- [ ] Status report created (if milestone reached)
+- [ ] Next steps clearly documented
+- [ ] All documentation updated (README, API docs, etc.)
+
+#### Why This Matters
+
+- **Continuity:** Future sessions need context
+- **Collaboration:** Other agents/developers need to understand changes
+- **Debugging:** Without context, bugs are impossible to trace
+- **Stakeholder Visibility:** Management needs to see progress
+- **Quality:** Documented code is maintainable code
+
+**Enforcement:** Code reviews will reject PRs that don't meet these documentation standards.
+
+---
+
 ### Pull Request Process
 
 **PR Template:**

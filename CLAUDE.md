@@ -182,6 +182,81 @@ The complete database schema is defined in **BDUF/BDUF-Chapter3.md**. Key tables
 4. Enforce MFA for privileged accounts
 5. Log all security-relevant events to audit_log table
 
+### 🔴 CRITICAL: Documentation & Tracking Requirements
+
+**EVERY code change MUST be documented. NO EXCEPTIONS.**
+
+#### 1. Todo List Management (Required for ALL sessions)
+- **Use TodoWrite tool** at the start of every work session
+- Break down tasks into trackable items
+- Update status as you work (pending → in_progress → completed)
+- Keep the todo list current - if priorities change, update it
+- Clean up completed todos periodically
+
+#### 2. Code Changes Documentation (Required)
+When you make ANY code changes, you MUST:
+- [ ] **Commit frequently** with clear, descriptive commit messages
+- [ ] **Document what changed** in the commit message (not just "update file")
+- [ ] **Document why it changed** (explain the reasoning)
+- [ ] **Update relevant documentation** (README, API docs, etc.)
+
+#### 3. Status Updates (Required)
+Keep these files up-to-date:
+- [ ] **ACTIVE-ASSIGNMENTS.md** - Update progress on your assigned work
+- [ ] **CLAUDE.md** - Update project status section when milestones are reached
+- [ ] **Sprint status** - Create weekly status reports in `.subagents/STATUS-{module}-week{N}.md`
+
+#### 4. Roadmap & Planning Updates (Required)
+When you complete or change scope:
+- [ ] **Update SPRINT-PLAN.md** if sprint goals change
+- [ ] **Update module implementation guides** if approach changes
+- [ ] **Document blockers** in ACTIVE-ASSIGNMENTS.md
+- [ ] **Update Definition of Done** if requirements change
+
+#### 5. Before Ending a Session (Checklist)
+- [ ] All code changes committed with clear messages
+- [ ] Todo list updated with current status
+- [ ] ACTIVE-ASSIGNMENTS.md reflects current state
+- [ ] Any blockers documented
+- [ ] Status report created if completing a milestone
+- [ ] Next steps clearly documented for continuation
+
+**Example Good Commit Message:**
+```
+feat(auth): Implement JWT token refresh endpoint
+
+Added automatic token refresh to improve UX. Tokens are now
+refreshed 30 seconds before expiration using refresh tokens
+stored in Redis.
+
+Changes:
+- Added POST /auth/refresh endpoint
+- Implemented token rotation for security
+- Added Redis integration for refresh token storage
+- Updated auth middleware to handle token refresh
+
+Closes #123
+```
+
+**Example Bad Commit Message:**
+```
+update files
+```
+
+#### 6. Documentation Standards
+- **Code comments:** Explain "why", not "what"
+- **Function documentation:** JSDoc format for all public functions
+- **README updates:** Keep README.md current with new features
+- **API documentation:** Update OpenAPI/Swagger specs
+- **Architecture decisions:** Document in ADR format if significant
+
+**Why This Matters:**
+- Future Claude instances need to understand what was done and why
+- Project continuity depends on clear documentation
+- Debugging is impossible without context
+- Collaboration requires shared understanding
+- Stakeholders need visibility into progress
+
 ## Integrations
 
 The platform integrates with:
