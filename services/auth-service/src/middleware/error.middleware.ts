@@ -14,7 +14,7 @@ export function errorHandler(
   req: Request,
   res: Response,
   _next: NextFunction
-) {
+): void {
   // Log error
   logger.error('Error handler caught error', {
     error: error.message,
@@ -25,18 +25,20 @@ export function errorHandler(
 
   // Handle operational errors (AppError)
   if (error instanceof AppError && error.isOperational) {
-    return res.status(error.statusCode).json({
+    res.status(error.statusCode).json({
       error: error.code,
       message: error.message,
     });
+    return;
   }
 
   // Handle validation errors (Joi)
   if (error.name === 'ValidationError') {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'VALIDATION_ERROR',
       message: error.message,
     });
+    return;
   }
 
   // Handle unexpected errors
@@ -45,7 +47,7 @@ export function errorHandler(
     stack: error.stack,
   });
 
-  return res.status(500).json({
+  res.status(500).json({
     error: 'INTERNAL_SERVER_ERROR',
     message: 'An unexpected error occurred',
   });
@@ -54,7 +56,7 @@ export function errorHandler(
 /**
  * 404 Not Found handler
  */
-export function notFoundHandler(req: Request, res: Response) {
+export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({
     error: 'NOT_FOUND',
     message: `Route ${req.method} ${req.path} not found`,
@@ -65,7 +67,7 @@ export function notFoundHandler(req: Request, res: Response) {
  * Validation middleware wrapper
  */
 export function validate(schema: any) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const { error } = schema.validate(req.body, {
       abortEarly: false,
       stripUnknown: true,
@@ -73,11 +75,12 @@ export function validate(schema: any) {
 
     if (error) {
       const messages = error.details.map((detail: any) => detail.message).join('; ');
-      return res.status(400).json({
+      res.status(400).json({
         error: 'VALIDATION_ERROR',
         message: messages,
         details: error.details,
       });
+      return;
     }
 
     next();

@@ -20,7 +20,6 @@ import {
 } from '../utils/errors';
 import {
   User,
-  UserRole,
   LoginRequest,
   LoginResponse,
   UserProfile,

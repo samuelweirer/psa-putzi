@@ -10,7 +10,7 @@ import logger from '../utils/logger';
 /**
  * Middleware to authenticate JWT token
  */
-export function authenticateJWT(req: Request, res: Response, next: NextFunction) {
+export function authenticateJWT(req: Request, res: Response, next: NextFunction): void {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -30,14 +30,15 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
     next();
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      return res.status(error.statusCode).json({
+      res.status(error.statusCode).json({
         error: error.code,
         message: error.message,
       });
+      return;
     }
 
     logger.error('Authentication error', { error });
-    return res.status(401).json({
+    res.status(401).json({
       error: 'AUTHENTICATION_FAILED',
       message: 'Authentication failed',
     });
@@ -47,7 +48,7 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
 /**
  * Optional authentication - attach user if token is provided, but don't fail if not
  */
-export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   try {
     const authHeader = req.headers.authorization;
 

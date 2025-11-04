@@ -21,8 +21,8 @@ export function getPool(): Pool {
       connectionTimeoutMillis: config.database.connectionTimeoutMillis,
     });
 
-    pool.on('error', (err) => {
-      logger.error('Unexpected error on idle database client', { error: err });
+    pool.on('error', (err: Error) => {
+      logger.error('Unexpected error on idle database client', { error: err.message });
     });
 
     pool.on('connect', () => {

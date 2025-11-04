@@ -15,10 +15,10 @@ export class JWTService {
    */
   static generateAccessToken(payload: JWTPayload): string {
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.accessExpiry,
+      expiresIn: config.jwt.accessExpiry as string,
       issuer: 'psa-platform',
       audience: 'psa-api',
-    });
+    } as jwt.SignOptions);
   }
 
   /**
@@ -26,10 +26,10 @@ export class JWTService {
    */
   static generateRefreshToken(payload: JWTPayload): string {
     return jwt.sign(payload, config.jwt.refreshSecret, {
-      expiresIn: config.jwt.refreshExpiry,
+      expiresIn: config.jwt.refreshExpiry as string,
       issuer: 'psa-platform',
       audience: 'psa-api',
-    });
+    } as jwt.SignOptions);
   }
 
   /**

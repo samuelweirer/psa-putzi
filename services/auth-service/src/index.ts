@@ -33,8 +33,8 @@ getPool().query('SELECT NOW()')
   .then(() => {
     logger.info('Database connection successful');
   })
-  .catch((error) => {
-    logger.error('Database connection failed', { error });
+  .catch((error: Error) => {
+    logger.error('Database connection failed', { error: error.message });
     process.exit(1);
   });
 

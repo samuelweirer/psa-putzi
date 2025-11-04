@@ -50,7 +50,7 @@ export function rateLimit(options: {
     skipSuccessfulRequests = false,
   } = options;
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const key = `rate-limit:${keyGenerator(req)}`;
       const redisClient = getRedisClient();
@@ -102,10 +102,11 @@ export function rateLimit(options: {
       next();
     } catch (error) {
       if (error instanceof TooManyRequestsError) {
-        return res.status(error.statusCode).json({
+        res.status(error.statusCode).json({
           error: error.code,
           message: error.message,
         });
+        return;
       }
 
       // If Redis fails, log but don't block the request

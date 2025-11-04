@@ -54,7 +54,7 @@ const roleHierarchy: Record<UserRole, number> = {
  * Users with higher priority roles can also access
  */
 export function requireRole(...allowedRoles: UserRole[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new ForbiddenError('User not authenticated', 'NOT_AUTHENTICATED');
@@ -86,14 +86,15 @@ export function requireRole(...allowedRoles: UserRole[]) {
       next();
     } catch (error) {
       if (error instanceof ForbiddenError) {
-        return res.status(error.statusCode).json({
+        res.status(error.statusCode).json({
           error: error.code,
           message: error.message,
         });
+        return;
       }
 
       logger.error('RBAC error', { error });
-      return res.status(403).json({
+      res.status(403).json({
         error: 'AUTHORIZATION_FAILED',
         message: 'Authorization failed',
       });
@@ -105,7 +106,7 @@ export function requireRole(...allowedRoles: UserRole[]) {
  * Middleware to require exact role match (no hierarchy)
  */
 export function requireExactRole(...allowedRoles: UserRole[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new ForbiddenError('User not authenticated', 'NOT_AUTHENTICATED');
@@ -130,14 +131,15 @@ export function requireExactRole(...allowedRoles: UserRole[]) {
       next();
     } catch (error) {
       if (error instanceof ForbiddenError) {
-        return res.status(error.statusCode).json({
+        res.status(error.statusCode).json({
           error: error.code,
           message: error.message,
         });
+        return;
       }
 
       logger.error('RBAC error', { error });
-      return res.status(403).json({
+      res.status(403).json({
         error: 'AUTHORIZATION_FAILED',
         message: 'Authorization failed',
       });
@@ -149,7 +151,7 @@ export function requireExactRole(...allowedRoles: UserRole[]) {
  * Middleware to allow access only to own resources or admins
  */
 export function requireSelfOrAdmin(userIdParam: string = 'id') {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new ForbiddenError('User not authenticated', 'NOT_AUTHENTICATED');
@@ -161,13 +163,15 @@ export function requireSelfOrAdmin(userIdParam: string = 'id') {
 
       // Allow if accessing own resource
       if (userId === currentUserId) {
-        return next();
+        next();
+        return;
       }
 
       // Allow if admin
       const userPriority = roleHierarchy[userRole] || 0;
       if (userPriority >= roleHierarchy['tenant_admin']) {
-        return next();
+        next();
+        return;
       }
 
       logger.warn('Access denied - not own resource', {
@@ -182,14 +186,15 @@ export function requireSelfOrAdmin(userIdParam: string = 'id') {
       );
     } catch (error) {
       if (error instanceof ForbiddenError) {
-        return res.status(error.statusCode).json({
+        res.status(error.statusCode).json({
           error: error.code,
           message: error.message,
         });
+        return;
       }
 
       logger.error('RBAC error', { error });
-      return res.status(403).json({
+      res.status(403).json({
         error: 'AUTHORIZATION_FAILED',
         message: 'Authorization failed',
       });
