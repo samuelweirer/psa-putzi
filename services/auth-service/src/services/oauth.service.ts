@@ -2,7 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
 import { UserModel } from '../models/user.model';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 export interface OAuthProfile {
   provider: 'google' | 'microsoft';
