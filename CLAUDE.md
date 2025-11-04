@@ -119,6 +119,39 @@ Documentation for working with multiple Claude Code sub-agents in parallel:
 - API-first design with versioning
 - Multi-tenancy support
 
+### Service Code Structure
+Each microservice follows this standard structure:
+```
+services/{service-name}/
+├── src/
+│   ├── controllers/     # HTTP request handlers (routes → controllers)
+│   ├── services/        # Business logic (core functionality)
+│   ├── models/          # Data models and database interactions
+│   ├── middleware/      # Express middleware (auth, validation, error handling)
+│   ├── routes/          # API route definitions
+│   ├── utils/           # Utility functions (JWT, password hashing, etc.)
+│   ├── validators/      # Request validation schemas (Joi)
+│   ├── types/           # TypeScript type definitions
+│   ├── app.ts           # Express app configuration
+│   └── index.ts         # Entry point
+├── tests/
+│   ├── unit/            # Unit tests (≥80% coverage target)
+│   └── integration/     # Integration tests (API endpoints)
+├── package.json         # Dependencies and scripts
+├── tsconfig.json        # TypeScript configuration
+├── vitest.config.ts     # Test configuration
+├── .env.example         # Environment variables template
+└── .env                 # Local environment (gitignored)
+```
+
+**Key Conventions:**
+- Controllers handle HTTP requests/responses only
+- Services contain all business logic
+- Models handle database queries
+- Middleware for cross-cutting concerns (auth, logging, error handling)
+- Validators use Joi schemas for request validation
+- All async functions use async/await (no callbacks)
+
 ## Critical Data Model Information
 
 ### ⚠️ Billing Rate Model (IMPORTANT)
@@ -181,6 +214,17 @@ The complete database schema is defined in **BDUF/BDUF-Chapter3.md**. Key tables
 3. Support SSO (SAML, OIDC, LDAP)
 4. Enforce MFA for privileged accounts
 5. Log all security-relevant events to audit_log table
+
+### When Writing Tests
+1. **Framework:** Vitest (configured in `vitest.config.ts`)
+2. **Coverage target:** ≥80% for lines, functions, branches, and statements
+3. **Test structure:**
+   - Unit tests in `tests/unit/` - Test individual functions/classes
+   - Integration tests in `tests/integration/` - Test API endpoints end-to-end
+4. **Naming:** `{filename}.test.ts` (e.g., `auth.service.test.ts`)
+5. **Use supertest** for HTTP endpoint testing
+6. **Mock external dependencies** (database, Redis, external APIs)
+7. **Test both success and error cases**
 
 ### 🔴 CRITICAL: Documentation & Tracking Requirements
 
@@ -286,7 +330,59 @@ The platform integrates with:
 - Date format: DD.MM.YYYY (European)
 - Currency: EUR (€)
 
-## Common Tasks
+## Common Development Tasks
+
+### Auth Service (services/auth-service/)
+
+**Build and Development:**
+```bash
+cd services/auth-service
+
+# Install dependencies
+npm install
+
+# Build TypeScript to JavaScript
+npm run build
+
+# Run in development mode (with hot reload)
+npm run dev
+
+# Run production build
+npm start
+```
+
+**Testing:**
+```bash
+# Run all tests (watch mode)
+npm test
+
+# Run all tests once
+npm run test:coverage
+
+# Run only unit tests
+npm run test:unit
+
+# Run only integration tests
+npm run test:integration
+```
+
+**Linting:**
+```bash
+# Check for linting errors
+npm run lint
+
+# Fix linting errors automatically
+npm run lint:fix
+```
+
+**Environment Setup:**
+```bash
+# Copy example env file
+cp .env.example .env
+
+# Edit environment variables
+nano .env
+```
 
 ### Understanding the Architecture
 ```bash
@@ -307,6 +403,9 @@ grep "CREATE TABLE" BDUF/BDUF-Chapter3.md
 
 # Understand billing rate resolution
 cat BDUF/BDUF-Chapter3-Billing-Rate-Fix.md
+
+# Connect to PostgreSQL (Container 200)
+psql -h localhost -U psa_admin -d psa_platform
 ```
 
 ### Before Making Changes
@@ -333,8 +432,9 @@ cat BDUF/BDUF-Chapter3-Billing-Rate-Fix.md
 **In Progress:**
 - 🟡 **Sprint 2:** Auth Module (AUTH-001)
   - ✅ Project structure created (19 source files)
-  - ❌ npm install blocked (network issue - DNS resolution failure)
-  - ⚪ Awaiting network fix to continue implementation
+  - ✅ Dependencies installed (npm install successful)
+  - ✅ TypeScript configuration complete
+  - ⚪ Implementing core auth functionality (JWT, MFA, RBAC)
 
 **Next Sprints:**
 - Sprint 3: API Gateway & Frontend Foundation
@@ -350,7 +450,7 @@ cat BDUF/BDUF-Chapter3-Billing-Rate-Fix.md
 4. **High availability** - Designed for 99.5% uptime with 3-node cluster
 5. **Scalability** - Must support 200+ tenants and 10,000+ tickets/day
 6. **Infrastructure Ready** - Container 200 operational with PostgreSQL, Redis, RabbitMQ, Node.js
-7. **Current Blocker** - Network issue blocking npm package installation (DNS resolution failure)
+7. **Development Environment** - Services developed in `/opt/psa-putzi/services/`, deployed to `/opt/psa-platform/`
 
 ## Future Claude Instances
 
@@ -397,6 +497,6 @@ For questions about architecture decisions, consult the BDUF documentation first
 
 ---
 
-**Last Updated:** 2025-11-04 14:20 UTC
-**Version:** 2.1
+**Last Updated:** 2025-11-04 20:07 UTC
+**Version:** 2.2
 **Status:** Sprint 2 Active - Auth Module Development In Progress
