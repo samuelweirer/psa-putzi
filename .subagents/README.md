@@ -51,28 +51,29 @@
 
 3. **Set Up Your Environment**
    ```bash
-   cd /opt/psa
+   cd /opt/psa-putzi
    git pull
    cp .subagents/shared/.env.template services/{your-service}/.env
    # Edit .env with your values
+   cd services/{your-service}
    npm install
    ```
 
 4. **Create Your Status File**
    ```bash
-   cp TEMPLATE-status-update.md .subagents/status/agent-{N}-{name}.md
+   cp templates/TEMPLATE-status-update.md .subagents/status/{module}-YYYY-MM-DD.md
    # Update with your info
    ```
 
 5. **Start Working**
    - Build your module
-   - Update status DAILY
-   - Ask questions in issues/
-   - Share changes in shared/
+   - Update status after each session
+   - Ask questions in .subagents/issues/
+   - Share changes in .subagents/shared/
 
 6. **Before You Finish**
    ```bash
-   cp TEMPLATE-handover.md .subagents/handovers/{NN}-{you}-to-{next}.md
+   cp templates/TEMPLATE-handover.md .subagents/handovers/{NN}-{module}-complete.md
    # Complete all sections
    ```
 
@@ -97,17 +98,18 @@
    - Update .subagents/shared/types.ts
    - Add changelog comment at top
 3. If you need help:
-   - Create issue in .subagents/issues/
-   - @mention the agent
+   - Create issue in .subagents/issues/YYYY-MM-DD-description.md
+   - Use TEMPLATE-issue.md as template
 ```
 
-**End of Day:**
+**End of Session:**
 ```bash
-1. Update .subagents/status/agent-{N}-{name}.md
-   - What you did today
-   - What's blocking you
-   - What you'll do tomorrow
+1. Update or create .subagents/status/{module}-YYYY-MM-DD.md
+   - What you accomplished this session
+   - What's blocking you (if any)
+   - What you'll do next session
 2. Commit and push your changes
+   - Use conventional commits (feat/fix/docs/test)
 3. Notify others if you changed shared files
 ```
 
@@ -459,9 +461,10 @@ Your work is considered complete when:
 ## 📖 Additional Resources
 
 **Main Documentation:**
-- Project root: `/mnt/project/`
+- Project root: `/opt/psa-putzi/`
 - Module specs: `implementation/XX-MODULE-*.md`
 - Deployment: `implementation/00-DEPLOYMENT-STRATEGY.md`
+- Project management: `project-management/PROJECT-MANAGEMENT.md`
 
 **Tools & Guides:**
 - Sub-Agent Config: `SUB-AGENT-CONFIG.md`
