@@ -6,7 +6,7 @@
 **Port:** 3020
 **Dependencies:** psa-auth (Authentication), psa-db-master (PostgreSQL)
 
-> **📦 Deployment Note:** For MVP (Phase 1-2), this service runs on **Container 150 (psa-app)** alongside all other Node.js services, managed by PM2. See [00-DEPLOYMENT-STRATEGY.md](00-DEPLOYMENT-STRATEGY.md) for details.
+> **📦 Deployment Note:** For early MVP, this service runs on **Container 200 (psa-all-in-one)** alongside all infrastructure (PostgreSQL, Redis, etc.) and Node.js services, managed by PM2. Everything on localhost. See [00-DEPLOYMENT-STRATEGY.md](00-DEPLOYMENT-STRATEGY.md) for details.
 
 ---
 

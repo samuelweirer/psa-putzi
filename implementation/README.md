@@ -4,25 +4,35 @@ This folder contains detailed implementation guides for each module/service of t
 
 ## 🚀 Deployment Strategy
 
-**IMPORTANT:** For MVP development (Phase 1-2), all Node.js application services will run on a **single LXC container** (Container 150: psa-app) to simplify deployment and reduce resource overhead.
+**IMPORTANT:** For early MVP development, **EVERYTHING runs on a SINGLE LXC container** (Container 200: psa-all-in-one) to maximize simplicity.
 
 See **[00-DEPLOYMENT-STRATEGY.md](00-DEPLOYMENT-STRATEGY.md)** for complete details on:
-- MVP deployment (single container with PM2)
-- Production deployment (separate containers per service)
-- Migration path from MVP to production
-- Shared components and service communication
+- **Phase 0:** Single container with everything (PostgreSQL, Redis, RabbitMQ, Elasticsearch, all Node.js services)
+- **Phase 1:** Separate infrastructure containers (when you reach 10+ tenants)
+- **Phase 2:** Separate application containers (when you reach 20+ tenants)
+- **Phase 3:** High availability clusters (when you reach 50+ tenants)
 
-### Container Layout (MVP)
+### Container Layout (Phase 0 - Recommended Start)
 
-| Container | Service | CPU | RAM | IP |
-|-----------|---------|-----|-----|----|
-| 100 | PostgreSQL | 8 | 32GB | 10.0.30.10 |
-| 110 | Redis | 2 | 4GB | 10.0.20.20 |
-| 120 | RabbitMQ | 2 | 4GB | 10.0.20.30 |
-| 130 | Elasticsearch | 4 | 16GB | 10.0.20.40 |
-| **150** | **All Node.js Services** | **8** | **16GB** | **10.0.20.50** |
+| Container | Service | CPU | RAM | Storage | IP |
+|-----------|---------|-----|-----|---------|-----|
+| **200** | **EVERYTHING** | **16** | **64GB** | **1TB** | **10.0.20.100** |
 
-All application services (Auth, API Gateway, CRM, Tickets, Billing, etc.) run on Container 150 with different ports (3000-3070), managed by PM2.
+**What runs on Container 200:**
+- PostgreSQL 15 (localhost:5432)
+- Redis 7.x (localhost:6379)
+- RabbitMQ 3.12+ (localhost:5672, Management: localhost:15672)
+- Elasticsearch 8.x (localhost:9200)
+- psa-api-gateway (localhost:3000)
+- psa-auth (localhost:3010)
+- psa-crm (localhost:3020)
+- psa-tickets (localhost:3030)
+- psa-billing (localhost:3040)
+- psa-projects (localhost:3050)
+- psa-assets (localhost:3060)
+- psa-reports (localhost:3070)
+
+**Benefits:** Maximum simplicity, fastest setup (30 minutes), perfect for MVP and development.
 
 ---
 

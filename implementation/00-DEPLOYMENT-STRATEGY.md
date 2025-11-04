@@ -1,6 +1,6 @@
-# Deployment Strategy: MVP vs Production
+# Deployment Strategy: Single Container → Production
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Last Updated:** 2025-11-04
 **Status:** Active
 
@@ -8,40 +8,39 @@
 
 ## Overview
 
-This document outlines the deployment strategy for PSA-Platform, explaining the differences between the MVP (development) deployment and the final Production deployment.
+This document outlines the deployment strategy for PSA-Platform, starting with the absolute simplest approach and scaling as needed.
 
 ## Key Principle
 
-**Start simple, scale when needed.**
+**Start as simple as possible, scale when needed.**
 
-For MVP and initial development, we consolidate all Node.js application services into a single LXC container to reduce complexity, resource usage, and deployment overhead. As we scale, we can split into true microservices.
+For early MVP development, we run **EVERYTHING on a single LXC container** to minimize complexity and infrastructure overhead. As the platform matures, we progressively split services into separate containers.
 
 ---
 
-## MVP Deployment Architecture (Phase 1)
+## Phase 0: Single Container (Early MVP - Recommended Start)
 
 ### Container Layout
 
-| Container ID | Hostname | Service | CPU | RAM | Storage | IP Address |
-|--------------|----------|---------|-----|-----|---------|------------|
-| 100 | psa-db-master | PostgreSQL 15 | 8 | 32GB | 500GB | 10.0.30.10 |
-| 110 | psa-redis | Redis 7.x | 2 | 4GB | 10GB | 10.0.20.20 |
-| 120 | psa-rabbitmq | RabbitMQ 3.12+ | 2 | 4GB | 20GB | 10.0.20.30 |
-| 130 | psa-elasticsearch | Elasticsearch 8.x | 4 | 16GB | 200GB | 10.0.20.40 |
-| **150** | **psa-app** | **All Node.js Services** | **8** | **16GB** | **100GB** | **10.0.20.50** |
+**ONE CONTAINER FOR EVERYTHING:**
 
-### Container 150: psa-app (Consolidated Application)
+| Container ID | Hostname | Services | CPU | RAM | Storage | IP Address |
+|--------------|----------|----------|-----|-----|---------|------------|
+| **200** | **psa-all-in-one** | **Everything** | **16** | **64GB** | **1TB** | **10.0.20.100** |
 
-This single container runs ALL Node.js application services:
+### What Runs on Container 200
 
 ```
-psa-app (Container 150)
+psa-all-in-one (Container 200)
+├── PostgreSQL 15
+├── Redis 7.x
+├── RabbitMQ 3.12+
+├── Elasticsearch 8.x
 ├── Node.js 20 LTS
-├── TypeScript 5.x
 ├── PM2 (Process Manager)
-└── Services:
-    ├── psa-auth          (Port 3010)
+└── Application Services:
     ├── psa-api-gateway   (Port 3000)
+    ├── psa-auth          (Port 3010)
     ├── psa-crm           (Port 3020)
     ├── psa-tickets       (Port 3030)
     ├── psa-billing       (Port 3040)
@@ -54,23 +53,19 @@ psa-app (Container 150)
 
 ```
 /opt/psa-platform/
+├── data/
+│   ├── postgresql/      # PostgreSQL data directory
+│   ├── redis/           # Redis data directory
+│   ├── rabbitmq/        # RabbitMQ data directory
+│   └── elasticsearch/   # Elasticsearch data directory
 ├── services/
 │   ├── auth/
 │   │   ├── src/
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── api-gateway/
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── tsconfig.json
 │   ├── crm/
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── tsconfig.json
 │   ├── tickets/
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── tsconfig.json
 │   ├── billing/
 │   ├── projects/
 │   ├── assets/
@@ -79,16 +74,262 @@ psa-app (Container 150)
 │   ├── database/        # Shared DB connection pool
 │   ├── redis/           # Shared Redis client
 │   ├── rabbitmq/        # Shared MQ connection
-│   ├── middleware/      # Shared Express middleware
 │   └── utils/           # Shared utilities
+├── logs/
+│   ├── postgresql/
+│   ├── redis/
+│   ├── rabbitmq/
+│   ├── elasticsearch/
+│   └── services/
+├── backups/
 ├── ecosystem.config.js  # PM2 configuration
-└── .env                 # Shared environment variables
+└── .env                 # Environment variables
 ```
 
-### PM2 Configuration
+---
+
+## Container Setup
+
+### 1. Create LXC Container
+
+```bash
+# Create all-in-one container on Proxmox
+pct create 200 local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst \
+  --hostname psa-all-in-one \
+  --cores 16 \
+  --memory 65536 \
+  --swap 8192 \
+  --rootfs local-lvm:1000 \
+  --net0 name=eth0,bridge=vmbr20,ip=10.0.20.100/24,gw=10.0.20.1 \
+  --nameserver 10.0.10.1 \
+  --features nesting=1 \
+  --unprivileged 1
+
+# Start container
+pct start 200
+
+# Enter container
+pct enter 200
+```
+
+### 2. Install PostgreSQL
+
+```bash
+# Update system
+apt update && apt upgrade -y
+
+# Install PostgreSQL 15
+apt install -y postgresql-15 postgresql-contrib-15
+
+# Configure PostgreSQL
+cat >> /etc/postgresql/15/main/postgresql.conf << 'EOF'
+
+# PSA Platform Configuration
+listen_addresses = 'localhost'
+port = 5432
+max_connections = 200
+
+# Memory (for 64GB system)
+shared_buffers = 4GB
+effective_cache_size = 12GB
+maintenance_work_mem = 1GB
+work_mem = 20MB
+
+# Performance
+random_page_cost = 1.1
+effective_io_concurrency = 200
+
+# Logging
+log_min_duration_statement = 1000
+EOF
+
+# Restart PostgreSQL
+systemctl restart postgresql
+
+# Create database and user
+sudo -u postgres psql << 'EOF'
+CREATE USER psa_app WITH PASSWORD 'your_secure_password_here';
+CREATE DATABASE psa_platform OWNER psa_app;
+\c psa_platform
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS "btree_gin";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+GRANT ALL PRIVILEGES ON DATABASE psa_platform TO psa_app;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO psa_app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO psa_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO psa_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO psa_app;
+EOF
+```
+
+### 3. Install Redis
+
+```bash
+# Install Redis
+apt install -y redis-server
+
+# Configure Redis
+cat > /etc/redis/redis.conf << 'EOF'
+bind 127.0.0.1
+port 6379
+requirepass your_redis_password_here
+
+# Memory
+maxmemory 2gb
+maxmemory-policy allkeys-lru
+
+# Persistence
+appendonly yes
+appendfsync everysec
+save 900 1
+save 300 10
+save 60 10000
+
+# Security
+rename-command FLUSHALL ""
+rename-command FLUSHDB ""
+EOF
+
+# Restart Redis
+systemctl restart redis-server
+systemctl enable redis-server
+```
+
+### 4. Install RabbitMQ
+
+```bash
+# Install RabbitMQ
+apt install -y rabbitmq-server
+
+# Enable management plugin
+rabbitmq-plugins enable rabbitmq_management
+
+# Create admin user
+rabbitmqctl add_user admin your_rabbitmq_password_here
+rabbitmqctl set_user_tags admin administrator
+rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
+
+# Delete default guest user
+rabbitmqctl delete_user guest
+
+# Create application user
+rabbitmqctl add_user psa_app your_app_password_here
+rabbitmqctl set_permissions -p / psa_app ".*" ".*" ".*"
+
+# Start RabbitMQ
+systemctl enable rabbitmq-server
+systemctl start rabbitmq-server
+```
+
+### 5. Install Elasticsearch
+
+```bash
+# Install dependencies
+apt install -y apt-transport-https gnupg
+
+# Add Elasticsearch repository
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | apt-key add -
+echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" > /etc/apt/sources.list.d/elastic-8.x.list
+
+# Install Elasticsearch
+apt update && apt install -y elasticsearch
+
+# Configure Elasticsearch
+cat > /etc/elasticsearch/elasticsearch.yml << 'EOF'
+cluster.name: psa-platform
+node.name: psa-node-1
+
+# Network
+network.host: 127.0.0.1
+http.port: 9200
+
+# Paths
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+
+# Memory
+bootstrap.memory_lock: false
+
+# Single node (no clustering)
+discovery.type: single-node
+
+# Security
+xpack.security.enabled: false
+EOF
+
+# Set JVM heap (4GB for 64GB system)
+cat > /etc/elasticsearch/jvm.options.d/heap.options << 'EOF'
+-Xms4g
+-Xmx4g
+EOF
+
+# Start Elasticsearch
+systemctl enable elasticsearch
+systemctl start elasticsearch
+```
+
+### 6. Install Node.js and Application
+
+```bash
+# Install Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs build-essential git
+
+# Install PM2 globally
+npm install -g pm2
+
+# Create application directory
+mkdir -p /opt/psa-platform/{services,shared,logs,backups,data}
+
+# Clone repository (or create your own structure)
+cd /opt/psa-platform
+git clone https://github.com/samuelweirer/psa-putzi.git repo
+
+# Create .env file
+cat > /opt/psa-platform/.env << 'EOF'
+NODE_ENV=production
+
+# Database
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_DB=psa_platform
+POSTGRES_USER=psa_app
+POSTGRES_PASSWORD=your_secure_password_here
+
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password_here
+
+# RabbitMQ
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_USER=psa_app
+RABBITMQ_PASSWORD=your_app_password_here
+RABBITMQ_VHOST=/
+
+# Elasticsearch
+ELASTICSEARCH_HOST=127.0.0.1
+ELASTICSEARCH_PORT=9200
+
+# JWT
+JWT_SECRET=your_jwt_secret_min_32_characters_long
+
+# Email (optional)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=noreply@psa-platform.local
+SMTP_PASSWORD=smtp_password
+EOF
+
+chmod 600 /opt/psa-platform/.env
+```
+
+### 7. PM2 Configuration
 
 ```javascript
-// ecosystem.config.js
+// /opt/psa-platform/ecosystem.config.js
 module.exports = {
   apps: [
     {
@@ -96,6 +337,7 @@ module.exports = {
       script: './services/api-gateway/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3000
@@ -106,6 +348,7 @@ module.exports = {
       script: './services/auth/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3010
@@ -116,6 +359,7 @@ module.exports = {
       script: './services/crm/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3020
@@ -124,8 +368,9 @@ module.exports = {
     {
       name: 'tickets',
       script: './services/tickets/dist/index.js',
-      instances: 4,  // More instances for high-traffic service
+      instances: 4,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3030
@@ -136,6 +381,7 @@ module.exports = {
       script: './services/billing/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3040
@@ -146,6 +392,7 @@ module.exports = {
       script: './services/projects/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3050
@@ -156,6 +403,7 @@ module.exports = {
       script: './services/assets/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3060
@@ -166,6 +414,7 @@ module.exports = {
       script: './services/reports/dist/index.js',
       instances: 2,
       exec_mode: 'cluster',
+      env_file: '.env',
       env: {
         NODE_ENV: 'production',
         PORT: 3070
@@ -175,39 +424,15 @@ module.exports = {
 };
 ```
 
-### Container Setup
+### 8. Build and Start Services
 
 ```bash
-# Create application container
-pct create 150 local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst \
-  --hostname psa-app \
-  --cores 8 \
-  --memory 16384 \
-  --rootfs local-lvm:100 \
-  --net0 name=eth0,bridge=vmbr20,ip=10.0.20.50/24,gw=10.0.20.1 \
-  --features nesting=1
-
-pct start 150
-pct enter 150
-
-# Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs build-essential git
-
-# Install PM2 globally
-npm install -g pm2
-
-# Create directory structure
-mkdir -p /opt/psa-platform/{services,shared,logs}
+# Build all services
 cd /opt/psa-platform
 
-# Clone repository
-git clone https://github.com/samuelweirer/psa-putzi.git
-cd psa-putzi
-
-# Install dependencies for all services
 for service in services/*; do
   if [ -f "$service/package.json" ]; then
+    echo "Building $service..."
     cd "$service"
     npm install
     npm run build
@@ -215,7 +440,7 @@ for service in services/*; do
   fi
 done
 
-# Start all services with PM2
+# Start all services
 pm2 start ecosystem.config.js
 
 # Save PM2 configuration
@@ -223,374 +448,355 @@ pm2 save
 
 # Setup PM2 to start on boot
 pm2 startup systemd
+# Copy and run the command that PM2 outputs
+
+# View status
+pm2 status
+pm2 logs
 ```
 
 ---
 
-## Advantages of MVP Deployment
+## Advantages of Single Container
 
-✅ **Simplified Development:**
-- Single container to manage
-- Easier debugging (all logs in one place)
-- Faster deployment
+✅ **Maximum Simplicity:**
+- Only ONE container to manage
+- All services on localhost
+- No network complexity
+- Single point of configuration
 
-✅ **Resource Efficiency:**
-- Lower memory footprint
-- No inter-container network overhead
-- Shared Node.js runtime and dependencies
+✅ **Lowest Resource Overhead:**
+- No inter-container network
+- Shared memory and CPU
+- Single OS instance
+
+✅ **Easiest Development:**
+- All logs in one place
+- Simple debugging
+- Fast service communication (localhost)
+- No firewall/network issues
+
+✅ **Rapid Prototyping:**
+- Setup in 30 minutes
+- Perfect for POC/MVP
+- Easy to reset and rebuild
 
 ✅ **Cost Effective:**
-- Fewer containers = lower infrastructure cost
-- Suitable for MVP and small deployments (< 50 tenants)
-
-✅ **Easier Monitoring:**
-- All services in one PM2 dashboard
-- Single log aggregation point
-- Simplified health checks
-
-✅ **Code Modularity Maintained:**
-- Services are still separate codebases
-- Can be split into containers later
-- Same microservices architecture
+- Minimal infrastructure
+- Can run on single physical/virtual machine
+- Lower licensing costs (if applicable)
 
 ---
 
-## Production Deployment Architecture (Phase 4)
+## Recommended Limits (Single Container)
 
-### When to Migrate?
+**Safe Operation Range:**
+- Max tenants: **10-20**
+- Max concurrent users: **50-100**
+- Max tickets/day: **200-500**
+- Max API requests/minute: **1,000**
 
-Migrate to separate containers when:
-- **> 50 tenants** or **> 1000 tickets/day**
-- Need to scale individual services independently
-- Want zero-downtime deployments per service
-- Require service-level isolation for security/compliance
+**Hardware Requirements:**
+- CPU: 16 cores (or 8 cores minimum)
+- RAM: 64GB (or 32GB minimum)
+- Storage: 1TB SSD (or 500GB minimum)
 
-### Separate Container Layout
+**Beyond these limits:** Migrate to Phase 1 (separate infrastructure containers)
 
-| Container ID | Service | Instances | CPU | RAM |
-|--------------|---------|-----------|-----|-----|
-| 120 | psa-api-gateway | 3 | 2 | 4GB |
-| 121 | psa-auth | 3 | 2 | 4GB |
-| 130 | psa-crm | 3 | 2 | 4GB |
-| 140 | psa-tickets | 5 | 4 | 8GB |
-| 150 | psa-billing | 3 | 2 | 4GB |
-| 160 | psa-projects | 3 | 2 | 4GB |
-| 170 | psa-assets | 2 | 2 | 4GB |
-| 180 | psa-reports | 3 | 4 | 8GB |
+---
 
-### Migration Path
+## Migration Path
+
+### Phase 1: Separate Infrastructure (5-20 tenants)
+
+When you outgrow the single container, split infrastructure first:
+
+```
+Container 100: PostgreSQL (8 cores, 32GB RAM)
+Container 110: Redis (2 cores, 4GB RAM)
+Container 120: RabbitMQ (2 cores, 4GB RAM)
+Container 130: Elasticsearch (4 cores, 16GB RAM)
+Container 150: All Node.js services (8 cores, 16GB RAM)
+```
+
+**Migration Steps:**
 
 ```bash
-# Step 1: Extract service to separate container
-pct create 121 local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst \
-  --hostname psa-auth \
-  --cores 2 \
-  --memory 4096 \
-  --rootfs local-lvm:20 \
-  --net0 name=eth0,bridge=vmbr20,ip=10.0.20.51/24
+# 1. Create PostgreSQL container
+pct create 100 ... # (see Infrastructure module guide)
 
-# Step 2: Copy service code
-rsync -avz /opt/psa-platform/services/auth/ root@psa-auth:/opt/psa-auth/
+# 2. Dump database from Container 200
+pg_dump -U psa_app psa_platform > /backup/psa_platform.sql
 
-# Step 3: Update API Gateway routing
-# Change: http://localhost:3010 → http://10.0.20.51:3010
+# 3. Import to new PostgreSQL container
+psql -h 10.0.30.10 -U psa_app psa_platform < /backup/psa_platform.sql
 
-# Step 4: Start service on new container
-pm2 start /opt/psa-auth/dist/index.js --name auth
+# 4. Update .env
+POSTGRES_HOST=10.0.30.10
 
-# Step 5: Stop service on old container
-pm2 stop auth
-pm2 delete auth
+# 5. Restart services
+pm2 restart all
 
-# Step 6: Test and verify
-curl http://10.0.20.51:3010/health
+# 6. Stop PostgreSQL on Container 200
+systemctl stop postgresql
+systemctl disable postgresql
 
-# Repeat for each service
+# Repeat for Redis, RabbitMQ, Elasticsearch
 ```
 
----
+### Phase 2: Separate Application Services (20-50 tenants)
 
-## Shared Components Strategy
+Split Node.js services into separate containers:
 
-### Database Connection Pool
-
-All services share the same PostgreSQL connection pool configuration:
-
-```typescript
-// shared/database/pool.ts
-import { Pool } from 'pg';
-
-export const db = new Pool({
-  host: process.env.POSTGRES_HOST || '10.0.30.10',
-  port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  database: process.env.POSTGRES_DB || 'psa_platform',
-  user: process.env.POSTGRES_USER || 'psa_app',
-  password: process.env.POSTGRES_PASSWORD,
-  max: 20,  // Max connections per service
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000
-});
+```
+Container 120: API Gateway (2 cores, 4GB)
+Container 121: Auth (2 cores, 4GB)
+Container 130: CRM (2 cores, 4GB)
+Container 140: Tickets (4 cores, 8GB)
+Container 150: Billing (2 cores, 4GB)
+Container 160: Projects (2 cores, 4GB)
+Container 170: Assets (2 cores, 4GB)
+Container 180: Reports (4 cores, 8GB)
 ```
 
-### Redis Client
+### Phase 3: High Availability (50+ tenants)
 
-```typescript
-// shared/redis/client.ts
-import Redis from 'ioredis';
-
-export const redis = new Redis({
-  host: process.env.REDIS_HOST || '10.0.20.20',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  retryStrategy: (times) => {
-    return Math.min(times * 50, 2000);
-  }
-});
-```
-
-### RabbitMQ Connection
-
-```typescript
-// shared/rabbitmq/client.ts
-import amqp from 'amqplib';
-
-let connection: amqp.Connection;
-let channel: amqp.Channel;
-
-export async function getRabbitMQChannel(): Promise<amqp.Channel> {
-  if (!connection) {
-    connection = await amqp.connect(
-      process.env.RABBITMQ_URL || 'amqp://10.0.20.30:5672'
-    );
-  }
-
-  if (!channel) {
-    channel = await connection.createChannel();
-  }
-
-  return channel;
-}
-```
-
----
-
-## Service Communication
-
-### Internal API Calls (MVP)
-
-Services communicate via localhost HTTP calls:
-
-```typescript
-// In psa-tickets service
-import axios from 'axios';
-
-async function getCustomer(customerId: string) {
-  const response = await axios.get(
-    `http://localhost:3020/api/v1/customers/${customerId}`,
-    {
-      headers: {
-        'X-Internal-Request': 'true',
-        'X-Service': 'psa-tickets'
-      }
-    }
-  );
-  return response.data;
-}
-```
-
-### Event-Driven Communication (Recommended)
-
-Use RabbitMQ for async communication:
-
-```typescript
-// Publish event
-await publishEvent('ticket.created', {
-  ticketId: ticket.id,
-  customerId: ticket.customer_id,
-  tenantId: ticket.tenant_id
-});
-
-// Subscribe to events
-consumeEvents('ticket.created', async (event) => {
-  // Send email notification
-  await sendEmailNotification(event);
-});
-```
+Add redundancy:
+- PostgreSQL: Master + 2 replicas
+- Redis: Sentinel (3 nodes)
+- RabbitMQ: Cluster (3 nodes)
+- Elasticsearch: Cluster (3 nodes)
+- Load balancer for application services
 
 ---
 
 ## Monitoring & Management
 
-### PM2 Commands
-
-```bash
-# View all services
-pm2 list
-
-# View logs
-pm2 logs
-pm2 logs auth
-pm2 logs tickets --lines 100
-
-# Monitor resources
-pm2 monit
-
-# Restart specific service
-pm2 restart tickets
-
-# Restart all services
-pm2 restart all
-
-# Reload with zero-downtime
-pm2 reload tickets
-
-# View service info
-pm2 info tickets
-```
-
-### Health Checks
+### Service Status
 
 ```bash
 # Check all services
-for port in 3000 3010 3020 3030 3040 3050 3060 3070; do
-  echo "Checking port $port..."
-  curl -s http://localhost:$port/health | jq .
-done
+systemctl status postgresql
+systemctl status redis-server
+systemctl status rabbitmq-server
+systemctl status elasticsearch
+pm2 status
+
+# View logs
+journalctl -u postgresql -f
+journalctl -u redis-server -f
+journalctl -u rabbitmq-server -f
+journalctl -u elasticsearch -f
+pm2 logs
+
+# Resource usage
+htop
+df -h
 ```
 
-### Monitoring Integration
+### Health Check Script
 
 ```bash
-# Install PM2 monitoring
-pm2 install pm2-logrotate
+#!/bin/bash
+# /usr/local/bin/health-check.sh
 
-# Configure log rotation
-pm2 set pm2-logrotate:max_size 100M
-pm2 set pm2-logrotate:retain 7
+echo "=== PSA Platform Health Check ==="
+echo ""
 
-# Export metrics to Prometheus
-pm2 install pm2-prometheus-exporter
+# PostgreSQL
+echo -n "PostgreSQL: "
+if sudo -u postgres psql -c "SELECT 1" > /dev/null 2>&1; then
+  echo "✓ OK"
+else
+  echo "✗ FAILED"
+fi
+
+# Redis
+echo -n "Redis: "
+if redis-cli -a "$REDIS_PASSWORD" PING > /dev/null 2>&1; then
+  echo "✓ OK"
+else
+  echo "✗ FAILED"
+fi
+
+# RabbitMQ
+echo -n "RabbitMQ: "
+if rabbitmqctl status > /dev/null 2>&1; then
+  echo "✓ OK"
+else
+  echo "✗ FAILED"
+fi
+
+# Elasticsearch
+echo -n "Elasticsearch: "
+if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
+  echo "✓ OK"
+else
+  echo "✗ FAILED"
+fi
+
+# Application services
+echo ""
+echo "Application Services:"
+pm2 jlist | jq -r '.[] | "\(.name): \(.pm2_env.status)"'
+
+echo ""
+echo "=== Resource Usage ==="
+echo "CPU: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%"
+echo "RAM: $(free -h | grep Mem | awk '{print $3 "/" $2}')"
+echo "Disk: $(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')"
 ```
 
 ---
 
 ## Backup Strategy
 
-### Application Code Backup
+### Automated Backup Script
 
 ```bash
 #!/bin/bash
-# /usr/local/bin/backup-psa-app.sh
+# /usr/local/bin/backup-psa.sh
 
-BACKUP_DIR="/backup/psa-app"
+BACKUP_DIR="/opt/psa-platform/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
-# Backup code and configuration
-tar -czf "$BACKUP_DIR/psa-app-$DATE.tar.gz" \
-  /opt/psa-platform/services \
-  /opt/psa-platform/shared \
+mkdir -p "$BACKUP_DIR"
+
+echo "Starting backup at $DATE..."
+
+# 1. PostgreSQL
+echo "Backing up PostgreSQL..."
+sudo -u postgres pg_dump psa_platform | gzip > "$BACKUP_DIR/postgres_$DATE.sql.gz"
+
+# 2. Redis
+echo "Backing up Redis..."
+redis-cli -a "$REDIS_PASSWORD" SAVE
+cp /var/lib/redis/dump.rdb "$BACKUP_DIR/redis_$DATE.rdb"
+
+# 3. RabbitMQ
+echo "Backing up RabbitMQ..."
+rabbitmqctl export_definitions "$BACKUP_DIR/rabbitmq_$DATE.json"
+
+# 4. Elasticsearch
+echo "Backing up Elasticsearch..."
+curl -X PUT "localhost:9200/_snapshot/psa_backup/snapshot_$DATE?wait_for_completion=true"
+
+# 5. Application code
+echo "Backing up application..."
+tar -czf "$BACKUP_DIR/app_$DATE.tar.gz" /opt/psa-platform/services /opt/psa-platform/shared
+
+# 6. Configuration
+echo "Backing up configuration..."
+tar -czf "$BACKUP_DIR/config_$DATE.tar.gz" \
+  /opt/psa-platform/.env \
   /opt/psa-platform/ecosystem.config.js \
-  /opt/psa-platform/.env
+  /etc/postgresql/15/main/postgresql.conf \
+  /etc/redis/redis.conf
 
-# Keep last 7 days
-find $BACKUP_DIR -name "psa-app-*.tar.gz" -mtime +7 -delete
+# 7. Clean old backups (keep 7 days)
+find "$BACKUP_DIR" -name "*.gz" -mtime +7 -delete
+find "$BACKUP_DIR" -name "*.rdb" -mtime +7 -delete
+find "$BACKUP_DIR" -name "*.json" -mtime +7 -delete
+
+echo "Backup completed at $(date)"
+```
+
+**Schedule with cron:**
+```bash
+# Daily backup at 2 AM
+0 2 * * * /usr/local/bin/backup-psa.sh >> /var/log/psa-backup.log 2>&1
 ```
 
 ---
 
-## Performance Considerations
+## Quick Reference
 
-### MVP Deployment Limits
-
-**Recommended Limits:**
-- Max tenants: 50
-- Max concurrent users: 200
-- Max tickets/day: 1,000
-- Max API requests/minute: 5,000
-
-**Beyond these limits:** Migrate to separate containers.
-
-### Database Connection Pooling
-
-With all services in one container:
-- Total max connections: 160 (8 services × 20 connections)
-- PostgreSQL max_connections should be: 500
-- Leaves headroom for maintenance and ad-hoc queries
-
----
-
-## CI/CD for MVP
-
-### Deployment Script
+### Connection Strings
 
 ```bash
-#!/bin/bash
-# deploy.sh
+# PostgreSQL
+postgresql://psa_app:password@localhost:5432/psa_platform
 
-set -e
+# Redis
+redis://:password@localhost:6379
 
-echo "Pulling latest code..."
-git pull origin master
+# RabbitMQ
+amqp://psa_app:password@localhost:5672/
 
-echo "Installing dependencies..."
-for service in services/*; do
-  if [ -f "$service/package.json" ]; then
-    cd "$service"
-    npm install
-    npm run build
-    cd ../..
-  fi
-done
+# Elasticsearch
+http://localhost:9200
 
-echo "Reloading services with zero-downtime..."
-pm2 reload all
-
-echo "Deployment complete!"
-pm2 status
+# Application URLs (internal)
+http://localhost:3000  # API Gateway
+http://localhost:3010  # Auth
+http://localhost:3020  # CRM
+http://localhost:3030  # Tickets
+http://localhost:3040  # Billing
+http://localhost:3050  # Projects
+http://localhost:3060  # Assets
+http://localhost:3070  # Reports
 ```
 
-### Git Hook
+### Common Commands
 
 ```bash
-# .git/hooks/post-receive
-#!/bin/bash
-cd /opt/psa-platform/psa-putzi
-./deploy.sh
+# Restart everything
+systemctl restart postgresql redis-server rabbitmq-server elasticsearch
+pm2 restart all
+
+# View all logs
+pm2 logs
+
+# Database console
+sudo -u postgres psql psa_platform
+
+# Redis console
+redis-cli -a "$REDIS_PASSWORD"
+
+# RabbitMQ management
+http://localhost:15672  # Username: admin
+
+# Elasticsearch status
+curl localhost:9200/_cluster/health?pretty
+
+# Full system status
+/usr/local/bin/health-check.sh
 ```
 
 ---
 
 ## Decision Matrix
 
-| Criteria | MVP (Single Container) | Production (Separate Containers) |
-|----------|------------------------|----------------------------------|
-| Tenants | < 50 | > 50 |
-| Tickets/day | < 1,000 | > 1,000 |
-| Team size | 1-3 developers | > 3 developers |
-| Deployment frequency | Weekly | Daily |
-| Uptime requirement | 99% | 99.9% |
-| Budget | Limited | Flexible |
-| Complexity tolerance | Low | High |
+| Criteria | Single Container | Separate Infrastructure | Full Microservices |
+|----------|-----------------|------------------------|-------------------|
+| Tenants | 1-10 | 10-50 | 50+ |
+| Users | < 50 | 50-200 | 200+ |
+| Tickets/day | < 200 | 200-1000 | 1000+ |
+| Development | POC/MVP | Active development | Production |
+| Team size | 1-2 | 2-5 | 5+ |
+| Uptime SLA | Best effort | 99% | 99.9% |
+| Setup time | 30 min | 2 hours | 1 day |
+| Complexity | ⭐ | ⭐⭐ | ⭐⭐⭐⭐ |
 
 ---
 
 ## Summary
 
-**For MVP Phase 1-2 (First 6-12 months):**
-- ✅ Use single container (Container 150: psa-app)
-- ✅ All Node.js services on same host
-- ✅ PM2 cluster mode for redundancy
-- ✅ Shared dependencies and connections
+**Start Here (Phase 0):**
+- ✅ Single container (Container 200)
+- ✅ All services on localhost
+- ✅ Perfect for MVP, POC, development
+- ✅ Up and running in 30 minutes
 
-**For Production Phase 3-4 (After 12 months):**
-- Migrate to separate containers
-- Independent scaling per service
-- Service-level isolation
-- Zero-downtime deployments
+**Scale When Needed:**
+- Phase 1: Separate infrastructure containers (10+ tenants)
+- Phase 2: Separate application containers (20+ tenants)
+- Phase 3: High availability clusters (50+ tenants)
 
-**The code architecture remains the same** - only the deployment changes!
+**The code stays the same** - only deployment changes!
 
 ---
 
 **Last Updated:** 2025-11-04
-**Next Review:** When reaching 30 tenants or 500 tickets/day
+**Recommended For:** Early MVP development (first 3-6 months)
+**Next Review:** When reaching 10 tenants or 200 tickets/day
