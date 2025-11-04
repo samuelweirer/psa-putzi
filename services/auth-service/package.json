@@ -23,6 +23,8 @@
   "author": "PSA-Platform Team",
   "license": "UNLICENSED",
   "dependencies": {
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -32,6 +34,9 @@
     "ioredis": "^5.3.2",
     "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-microsoft": "^2.1.0",
     "pg": "^8.11.3",
     "qrcode": "^1.5.3",
     "speakeasy": "^2.0.0",
