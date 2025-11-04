@@ -34,10 +34,16 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            PSA Platform
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-blue-600">
+            PUTZI
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-xs font-medium text-gray-500">
+            Platform for Unified Ticketing & Zero Integration-Gaps
+          </p>
+          <p className="mt-1 text-center text-sm italic text-gray-600">
+            „Saubere Prozesse – PUTZI macht's rein."
+          </p>
+          <p className="mt-4 text-center text-sm text-gray-600">
             Sign in to your account
           </p>
         </div>

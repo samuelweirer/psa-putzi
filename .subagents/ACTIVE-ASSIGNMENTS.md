@@ -1,6 +1,6 @@
 # Active Sub-Agent Assignments
 
-**Last Updated:** 2025-11-04 21:10 UTC
+**Last Updated:** 2025-11-04 21:25 UTC
 **Main Agent:** Project Manager (Claude Opus 4)
 **Project Phase:** Sprint 2 - Auth Module + Frontend Development (Parallel)
 **Unified Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG` (both agents)
@@ -85,7 +85,7 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
 ---
 
 #### AUTH-001: Authentication & Authorization Module
-- **Status:** 🟢 80% COMPLETE - OAuth2 integrated, tests passing, docs pending
+- **Status:** 🟢 85% COMPLETE - OAuth2 integrated, 79.54% test coverage, docs pending
 - **Agent Type:** Senior Developer 2 (Security Specialist)
 - **AI Model:** Claude Sonnet 4.5
 - **Priority:** P0 (Blocker for all other modules)
@@ -122,9 +122,9 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
   - ✅ .env configuration complete - COMPLETE
   - ✅ Graceful shutdown handling - COMPLETE
   - ✅ Logging with Winston - COMPLETE
-  - ✅ **Unit tests:** 107/107 passing
+  - ✅ **Unit tests:** 135/135 passing (+28 RBAC tests)
   - ✅ **Integration tests:** 30/30 passing (including MFA flow)
-  - ✅ **Test coverage:** 69% (target: 80%)
+  - ✅ **Test coverage:** 79.54% (↑ from 69%, target: 80%)
   - ✅ **MFA blocker resolved:** Duplicate token hash issue fixed
 
 **📝 Implementation Details:**
@@ -141,7 +141,7 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
   - **OAuth Routes**: 38 lines - all OAuth routes (NEW!)
   - **Middleware**: 4 files (auth, error, rate-limit, RBAC)
   - **Migrations**: 2 files (initial schema + OAuth columns)
-  - **Tests**: 137 tests passing (107 unit + 30 integration)
+  - **Tests**: 165 tests passing (135 unit + 30 integration)
 
 **🔧 Recent Work (2025-11-04 PM):**
   - ✅ OAuth2 Google integration complete (passport strategy)
@@ -150,20 +150,23 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
   - ✅ User model OAuth methods (find, link, create OAuth users)
   - ✅ 4 new OAuth API endpoints (initiate + callback for each provider)
   - ✅ Integrated with frontend branch (unified development)
+  - ✅ **Test coverage improvements: 69% → 79.54% (+10.54%)** ⬅️ NEW!
+    - ✅ 28 RBAC middleware tests (0% → 90.36%)
+    - ✅ 8 OAuth service tests (36.87% → 61.87%)
   - ✅ All commits pushed to GitHub
 
-**⚪ Remaining Tasks (20%):**
-  - ⚪ Increase test coverage from 69% → 80% (need +11%)
-    - Focus: RBAC middleware tests (currently 0%)
-    - Focus: OAuth integration tests
-    - Focus: Controller edge cases
-    - Estimated: 4-6 hours
+**⚪ Remaining Tasks (15%):**
+  - ⚡ Test coverage: 79.54% → 80% (need +0.46%, nearly complete!)
+    - ✅ RBAC middleware tests: COMPLETE (90.36% coverage)
+    - ✅ OAuth service tests: COMPLETE (61.87% coverage)
+    - Remaining: OAuth controller (33.98%) - requires complex Passport mocking
+    - Estimated: 1-2 hours for final push to 80%+
   - ⚪ API documentation (Swagger/OpenAPI) - not created (2-3 hours)
   - ⚪ Production deployment to PM2 - ready after docs complete
 
-**📊 Progress:** 80% complete (↑ from 75%)
+**📊 Progress:** 85% complete (↑ from 80%)
 - **Sprint Status:** On track for Week 3 completion
-- **Test Status:** ✅ All 137 tests passing (OAuth tests pending)
+- **Test Status:** ✅ All 165 tests passing (+28 RBAC tests)
 - **Build Status:** ✅ Clean (0 TypeScript errors in OAuth code)
 - **Blockers:** ✅ All resolved
 - **Branch:** ✅ Unified with frontend agent
@@ -171,12 +174,14 @@ This document tracks all active sub-agent assignments for PSA-Platform developme
 **Deliverable:** Production-ready auth service with JWT, MFA, RBAC, OAuth2
 
 **Next Steps:**
-  1. ⚪ Increase test coverage to 80% - Week 2 (remaining 4-6 hours)
+  1. ⚡ Increase test coverage 79.54% → 80% - Week 2 (1-2 hours remaining)
   2. ⚪ Create Swagger API docs - Week 2 (2-3 hours)
   3. ⚪ Deploy to PM2 on Container 200 - Week 3
   4. ✅ OAuth2 integration - COMPLETE!
-  5. Frontend integration - In Progress (parallel with Junior-5)
-  5. Enables: GATEWAY-001, CRM-001, TICKETS-001
+  5. ✅ RBAC middleware tests - COMPLETE!
+  6. ✅ OAuth service tests - COMPLETE!
+  7. Frontend integration - In Progress (parallel with Junior-5)
+  8. Enables: GATEWAY-001, CRM-001, TICKETS-001
 
 ---
 
