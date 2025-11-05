@@ -10,6 +10,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CustomerListPage } from './pages/crm/CustomerListPage';
 import { CustomerDetailPage } from './pages/crm/CustomerDetailPage';
 import { CreateCustomerPage } from './pages/crm/CreateCustomerPage';
+import { EditCustomerPage } from './pages/crm/EditCustomerPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 function App() {
@@ -54,6 +55,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateCustomerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers/:customerId/edit"
+            element={
+              <ProtectedRoute>
+                <EditCustomerPage />
               </ProtectedRoute>
             }
           />
