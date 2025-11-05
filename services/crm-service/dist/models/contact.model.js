@@ -12,6 +12,7 @@ exports.ContactModel = void 0;
 const database_1 = require("../utils/database");
 const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
+const event_publisher_1 = require("../utils/event-publisher");
 class ContactModel {
     /**
      * Find all contacts for a customer
@@ -82,12 +83,15 @@ class ContactModel {
             JSON.stringify(data.custom_fields || {}),
             data.notes || null,
         ]);
+        const contact = result.rows[0];
         logger_1.default.info('Contact created', {
-            contactId: result.rows[0].id,
+            contactId: contact.id,
             customerId: data.customer_id,
             tenantId,
         });
-        return result.rows[0];
+        // Publish contact.created event
+        await event_publisher_1.eventPublisher.publish('contact.created', (0, event_publisher_1.createDomainEvent)('contact.created', tenantId, { contact }));
+        return contact;
     }
     /**
      * Update contact
@@ -133,19 +137,24 @@ class ContactModel {
        SET ${fields.join(', ')}
        WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1} AND deleted_at IS NULL
        RETURNING *`, params);
+        const contact = result.rows[0];
         logger_1.default.info('Contact updated', { contactId: id, tenantId });
-        return result.rows[0];
+        // Publish contact.updated event
+        await event_publisher_1.eventPublisher.publish('contact.updated', (0, event_publisher_1.createDomainEvent)('contact.updated', tenantId, { contact, changes: data }));
+        return contact;
     }
     /**
      * Soft delete contact
      */
     static async softDelete(id, tenantId) {
         // Verify contact exists
-        await this.findById(id, tenantId);
+        const contact = await this.findById(id, tenantId);
         await (0, database_1.query)(`UPDATE contacts
        SET deleted_at = NOW(), updated_at = NOW()
        WHERE id = $1 AND tenant_id = $2`, [id, tenantId]);
         logger_1.default.info('Contact soft deleted', { contactId: id, tenantId });
+        // Publish contact.deleted event
+        await event_publisher_1.eventPublisher.publish('contact.deleted', (0, event_publisher_1.createDomainEvent)('contact.deleted', tenantId, { contactId: id, contact }));
     }
     /**
      * Get primary contact for a customer

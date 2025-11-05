@@ -12,6 +12,7 @@ exports.CustomerModel = void 0;
 const database_1 = require("../utils/database");
 const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
+const event_publisher_1 = require("../utils/event-publisher");
 class CustomerModel {
     /**
      * Generate next customer number for tenant
@@ -157,12 +158,15 @@ class CustomerModel {
             data.notes || null,
             userId,
         ]);
+        const customer = result.rows[0];
         logger_1.default.info('Customer created', {
-            customerId: result.rows[0].id,
+            customerId: customer.id,
             tenantId,
             customerNumber,
         });
-        return result.rows[0];
+        // Publish customer.created event
+        await event_publisher_1.eventPublisher.publish('customer.created', (0, event_publisher_1.createDomainEvent)('customer.created', tenantId, { customer }, userId));
+        return customer;
     }
     /**
      * Update customer
@@ -209,21 +213,26 @@ class CustomerModel {
        SET ${fields.join(', ')}
        WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1} AND deleted_at IS NULL
        RETURNING *`, params);
+        const customer = result.rows[0];
         logger_1.default.info('Customer updated', { customerId: id, tenantId });
-        return result.rows[0];
+        // Publish customer.updated event
+        await event_publisher_1.eventPublisher.publish('customer.updated', (0, event_publisher_1.createDomainEvent)('customer.updated', tenantId, { customer, changes: data }));
+        return customer;
     }
     /**
      * Soft delete customer
      */
     static async softDelete(id, tenantId) {
         // Verify customer exists
-        await this.findById(id, tenantId);
+        const customer = await this.findById(id, tenantId);
         // Check if customer has active contracts or tickets
         // TODO: Add validation when those modules are implemented
         await (0, database_1.query)(`UPDATE customers
        SET deleted_at = NOW(), updated_at = NOW()
        WHERE id = $1 AND tenant_id = $2`, [id, tenantId]);
         logger_1.default.info('Customer soft deleted', { customerId: id, tenantId });
+        // Publish customer.deleted event
+        await event_publisher_1.eventPublisher.publish('customer.deleted', (0, event_publisher_1.createDomainEvent)('customer.deleted', tenantId, { customerId: id, customer }));
     }
     /**
      * Validate parent customer exists and prevent circular references

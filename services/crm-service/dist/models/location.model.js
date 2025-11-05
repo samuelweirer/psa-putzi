@@ -12,6 +12,7 @@ exports.LocationModel = void 0;
 const database_1 = require("../utils/database");
 const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
+const event_publisher_1 = require("../utils/event-publisher");
 class LocationModel {
     /**
      * Find all locations for a customer
@@ -63,12 +64,15 @@ class LocationModel {
             JSON.stringify(data.custom_fields || {}),
             data.notes || null,
         ]);
+        const location = result.rows[0];
         logger_1.default.info('Location created', {
-            locationId: result.rows[0].id,
+            locationId: location.id,
             customerId: data.customer_id,
             tenantId,
         });
-        return result.rows[0];
+        // Publish location.created event
+        await event_publisher_1.eventPublisher.publish('location.created', (0, event_publisher_1.createDomainEvent)('location.created', tenantId, { location }));
+        return location;
     }
     /**
      * Update location
@@ -108,19 +112,24 @@ class LocationModel {
        SET ${fields.join(', ')}
        WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1} AND deleted_at IS NULL
        RETURNING *`, params);
+        const location = result.rows[0];
         logger_1.default.info('Location updated', { locationId: id, tenantId });
-        return result.rows[0];
+        // Publish location.updated event
+        await event_publisher_1.eventPublisher.publish('location.updated', (0, event_publisher_1.createDomainEvent)('location.updated', tenantId, { location, changes: data }));
+        return location;
     }
     /**
      * Soft delete location
      */
     static async softDelete(id, tenantId) {
         // Verify location exists
-        await this.findById(id, tenantId);
+        const location = await this.findById(id, tenantId);
         await (0, database_1.query)(`UPDATE locations
        SET deleted_at = NOW(), updated_at = NOW()
        WHERE id = $1 AND tenant_id = $2`, [id, tenantId]);
         logger_1.default.info('Location soft deleted', { locationId: id, tenantId });
+        // Publish location.deleted event
+        await event_publisher_1.eventPublisher.publish('location.deleted', (0, event_publisher_1.createDomainEvent)('location.deleted', tenantId, { locationId: id, location }));
     }
     /**
      * Search locations

@@ -10,6 +10,7 @@ const app_1 = require("./app");
 const database_1 = require("./utils/database");
 const config_1 = __importDefault(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
+const event_publisher_1 = require("./utils/event-publisher");
 const app = (0, app_1.createApp)();
 // Test database connection
 async function testDatabaseConnection() {
@@ -30,6 +31,17 @@ async function start() {
     try {
         // Test database connection
         await testDatabaseConnection();
+        // Connect to RabbitMQ
+        try {
+            await event_publisher_1.eventPublisher.connect();
+            logger_1.default.info('RabbitMQ connection established');
+        }
+        catch (error) {
+            logger_1.default.warn('Failed to connect to RabbitMQ, events will not be published', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            // Don't fail startup if RabbitMQ is unavailable
+        }
         // Start listening
         const server = app.listen(config_1.default.port, () => {
             logger_1.default.info('CRM service started', {
@@ -44,6 +56,8 @@ async function start() {
             server.close(async () => {
                 logger_1.default.info('HTTP server closed');
                 await (0, database_1.closePool)();
+                await event_publisher_1.eventPublisher.close();
+                logger_1.default.info('RabbitMQ connection closed');
                 process.exit(0);
             });
             // Force shutdown after 10 seconds

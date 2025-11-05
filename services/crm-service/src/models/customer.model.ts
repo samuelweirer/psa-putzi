@@ -8,6 +8,7 @@ import { query } from '../utils/database';
 import { Customer, CustomerFilters, PaginatedResponse } from '../types';
 import { NotFoundError, ConflictError } from '../utils/errors';
 import logger from '../utils/logger';
+import { eventPublisher, createDomainEvent } from '../utils/event-publisher';
 
 export class CustomerModel {
   /**
@@ -199,13 +200,21 @@ export class CustomerModel {
       ]
     );
 
+    const customer = result.rows[0];
+
     logger.info('Customer created', {
-      customerId: result.rows[0].id,
+      customerId: customer.id,
       tenantId,
       customerNumber,
     });
 
-    return result.rows[0];
+    // Publish customer.created event
+    await eventPublisher.publish(
+      'customer.created',
+      createDomainEvent('customer.created', tenantId, { customer }, userId)
+    );
+
+    return customer;
   }
 
   /**
@@ -265,9 +274,17 @@ export class CustomerModel {
       params
     );
 
+    const customer = result.rows[0];
+
     logger.info('Customer updated', { customerId: id, tenantId });
 
-    return result.rows[0];
+    // Publish customer.updated event
+    await eventPublisher.publish(
+      'customer.updated',
+      createDomainEvent('customer.updated', tenantId, { customer, changes: data })
+    );
+
+    return customer;
   }
 
   /**
@@ -275,7 +292,7 @@ export class CustomerModel {
    */
   static async softDelete(id: string, tenantId: string): Promise<void> {
     // Verify customer exists
-    await this.findById(id, tenantId);
+    const customer = await this.findById(id, tenantId);
 
     // Check if customer has active contracts or tickets
     // TODO: Add validation when those modules are implemented
@@ -288,6 +305,12 @@ export class CustomerModel {
     );
 
     logger.info('Customer soft deleted', { customerId: id, tenantId });
+
+    // Publish customer.deleted event
+    await eventPublisher.publish(
+      'customer.deleted',
+      createDomainEvent('customer.deleted', tenantId, { customerId: id, customer })
+    );
   }
 
   /**

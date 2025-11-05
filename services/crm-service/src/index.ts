@@ -6,6 +6,7 @@ import { createApp } from './app';
 import { getPool, closePool } from './utils/database';
 import config from './utils/config';
 import logger from './utils/logger';
+import { eventPublisher } from './utils/event-publisher';
 
 const app = createApp();
 
@@ -29,6 +30,17 @@ async function start() {
     // Test database connection
     await testDatabaseConnection();
 
+    // Connect to RabbitMQ
+    try {
+      await eventPublisher.connect();
+      logger.info('RabbitMQ connection established');
+    } catch (error) {
+      logger.warn('Failed to connect to RabbitMQ, events will not be published', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      // Don't fail startup if RabbitMQ is unavailable
+    }
+
     // Start listening
     const server = app.listen(config.port, () => {
       logger.info('CRM service started', {
@@ -45,6 +57,8 @@ async function start() {
       server.close(async () => {
         logger.info('HTTP server closed');
         await closePool();
+        await eventPublisher.close();
+        logger.info('RabbitMQ connection closed');
         process.exit(0);
       });
 

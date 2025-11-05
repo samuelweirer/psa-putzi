@@ -8,6 +8,7 @@ import { query } from '../utils/database';
 import { Contact } from '../types';
 import { NotFoundError } from '../utils/errors';
 import logger from '../utils/logger';
+import { eventPublisher, createDomainEvent } from '../utils/event-publisher';
 
 export class ContactModel {
   /**
@@ -112,13 +113,21 @@ export class ContactModel {
       ]
     );
 
+    const contact = result.rows[0];
+
     logger.info('Contact created', {
-      contactId: result.rows[0].id,
+      contactId: contact.id,
       customerId: data.customer_id,
       tenantId,
     });
 
-    return result.rows[0];
+    // Publish contact.created event
+    await eventPublisher.publish(
+      'contact.created',
+      createDomainEvent('contact.created', tenantId, { contact })
+    );
+
+    return contact;
   }
 
   /**
@@ -180,9 +189,17 @@ export class ContactModel {
       params
     );
 
+    const contact = result.rows[0];
+
     logger.info('Contact updated', { contactId: id, tenantId });
 
-    return result.rows[0];
+    // Publish contact.updated event
+    await eventPublisher.publish(
+      'contact.updated',
+      createDomainEvent('contact.updated', tenantId, { contact, changes: data })
+    );
+
+    return contact;
   }
 
   /**
@@ -190,7 +207,7 @@ export class ContactModel {
    */
   static async softDelete(id: string, tenantId: string): Promise<void> {
     // Verify contact exists
-    await this.findById(id, tenantId);
+    const contact = await this.findById(id, tenantId);
 
     await query(
       `UPDATE contacts
@@ -200,6 +217,12 @@ export class ContactModel {
     );
 
     logger.info('Contact soft deleted', { contactId: id, tenantId });
+
+    // Publish contact.deleted event
+    await eventPublisher.publish(
+      'contact.deleted',
+      createDomainEvent('contact.deleted', tenantId, { contactId: id, contact })
+    );
   }
 
   /**

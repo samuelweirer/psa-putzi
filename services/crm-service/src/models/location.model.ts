@@ -8,6 +8,7 @@ import { query } from '../utils/database';
 import { Location } from '../types';
 import { NotFoundError } from '../utils/errors';
 import logger from '../utils/logger';
+import { eventPublisher, createDomainEvent } from '../utils/event-publisher';
 
 export class LocationModel {
   /**
@@ -82,13 +83,21 @@ export class LocationModel {
       ]
     );
 
+    const location = result.rows[0];
+
     logger.info('Location created', {
-      locationId: result.rows[0].id,
+      locationId: location.id,
       customerId: data.customer_id,
       tenantId,
     });
 
-    return result.rows[0];
+    // Publish location.created event
+    await eventPublisher.publish(
+      'location.created',
+      createDomainEvent('location.created', tenantId, { location })
+    );
+
+    return location;
   }
 
   /**
@@ -140,9 +149,17 @@ export class LocationModel {
       params
     );
 
+    const location = result.rows[0];
+
     logger.info('Location updated', { locationId: id, tenantId });
 
-    return result.rows[0];
+    // Publish location.updated event
+    await eventPublisher.publish(
+      'location.updated',
+      createDomainEvent('location.updated', tenantId, { location, changes: data })
+    );
+
+    return location;
   }
 
   /**
@@ -150,7 +167,7 @@ export class LocationModel {
    */
   static async softDelete(id: string, tenantId: string): Promise<void> {
     // Verify location exists
-    await this.findById(id, tenantId);
+    const location = await this.findById(id, tenantId);
 
     await query(
       `UPDATE locations
@@ -160,6 +177,12 @@ export class LocationModel {
     );
 
     logger.info('Location soft deleted', { locationId: id, tenantId });
+
+    // Publish location.deleted event
+    await eventPublisher.publish(
+      'location.deleted',
+      createDomainEvent('location.deleted', tenantId, { locationId: id, location })
+    );
   }
 
   /**
