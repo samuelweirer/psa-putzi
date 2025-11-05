@@ -220,32 +220,32 @@ export function DashboardPage() {
             <div className="bg-white shadow rounded-lg p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Schnellaktionen</h3>
               <div className="space-y-3">
-                <button className="w-full flex items-center px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-md text-left transition">
+                <Link to="/tickets/new" className="w-full flex items-center px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-md text-left transition">
                   <span className="mr-3 text-2xl">➕</span>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Neues Ticket erstellen</div>
                     <div className="text-xs text-gray-500">Support-Anfrage erfassen</div>
                   </div>
-                </button>
-                <button className="w-full flex items-center px-4 py-3 bg-green-50 hover:bg-green-100 rounded-md text-left transition">
+                </Link>
+                <Link to="/customers/new" className="w-full flex items-center px-4 py-3 bg-green-50 hover:bg-green-100 rounded-md text-left transition">
                   <span className="mr-3 text-2xl">🏢</span>
                   <div>
                     <div className="text-sm font-medium text-gray-900">Kunden hinzufügen</div>
                     <div className="text-xs text-gray-500">Neuen Kunden anlegen</div>
                   </div>
-                </button>
-                <button className="w-full flex items-center px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-md text-left transition">
-                  <span className="mr-3 text-2xl">⏱️</span>
+                </Link>
+                <button className="w-full flex items-center px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-md text-left transition" disabled title="Zeiterfassung kommt in Sprint 5">
+                  <span className="mr-3 text-2xl opacity-50">⏱️</span>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Zeiterfassung starten</div>
-                    <div className="text-xs text-gray-500">Arbeitszeit erfassen</div>
+                    <div className="text-sm font-medium text-gray-500">Zeiterfassung starten</div>
+                    <div className="text-xs text-gray-400">Kommt in Sprint 5</div>
                   </div>
                 </button>
-                <button className="w-full flex items-center px-4 py-3 bg-yellow-50 hover:bg-yellow-100 rounded-md text-left transition">
-                  <span className="mr-3 text-2xl">💶</span>
+                <button className="w-full flex items-center px-4 py-3 bg-yellow-50 hover:bg-yellow-100 rounded-md text-left transition" disabled title="Rechnungserstellung kommt in Sprint 7">
+                  <span className="mr-3 text-2xl opacity-50">💶</span>
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Rechnung erstellen</div>
-                    <div className="text-xs text-gray-500">Neue Rechnung anlegen</div>
+                    <div className="text-sm font-medium text-gray-500">Rechnung erstellen</div>
+                    <div className="text-xs text-gray-400">Kommt in Sprint 7</div>
                   </div>
                 </button>
               </div>
