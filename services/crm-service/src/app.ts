@@ -62,3 +62,6 @@ export function createApp(): Express {
 
   return app;
 }
+
+// Default export for tests
+export default createApp();
