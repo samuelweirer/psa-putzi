@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './utils/swagger';
+import ticketRoutes from './routes/ticket.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import config from './utils/config';
 import logger from './utils/logger';
@@ -55,10 +56,7 @@ export function createApp(): Express {
   }));
 
   // Routes
-  // TODO: Add ticket routes
-  // app.use('/api/v1/tickets', ticketRoutes);
-  // app.use('/api/v1/time-entries', timeEntryRoutes);
-  // app.use('/api/v1/comments', commentRoutes);
+  app.use('/api/v1/tickets', ticketRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
