@@ -11,6 +11,7 @@ import { logger } from './utils/logger';
 import { HealthResponse } from './types';
 import proxyRoutes from './routes/proxy.routes';
 import protectedRoutes from './routes/protected.routes';
+import { globalRateLimiter } from './middleware/rate-limit.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -105,6 +106,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   next();
 });
+
+/**
+ * Global rate limiting
+ * Applied to all routes except health checks
+ */
+app.use(globalRateLimiter);
 
 /**
  * Health check endpoint

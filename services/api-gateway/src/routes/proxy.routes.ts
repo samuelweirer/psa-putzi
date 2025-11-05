@@ -7,6 +7,7 @@ import { createProxyMiddleware, Options } from 'http-proxy-middleware';
 import { serviceRegistry } from '../config/services';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
+import { authRateLimiter, userRateLimiter } from '../middleware/rate-limit.middleware';
 
 const router = Router();
 
@@ -103,14 +104,16 @@ function createServiceProxy(serviceName: string): any {
 /**
  * Route: Auth Service
  * All /api/v1/auth/* requests go to auth service
+ * Strict rate limiting to prevent brute force attacks
  */
-router.use('/api/v1/auth', createServiceProxy('auth'));
+router.use('/api/v1/auth', authRateLimiter, createServiceProxy('auth'));
 
 /**
  * Route: Users (Auth Service)
  * All /api/v1/users/* requests go to auth service
+ * User-specific rate limiting for authenticated requests
  */
-router.use('/api/v1/users', createServiceProxy('auth'));
+router.use('/api/v1/users', userRateLimiter, createServiceProxy('auth'));
 
 /**
  * Future routes - commented out until services are ready
