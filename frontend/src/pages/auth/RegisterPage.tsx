@@ -35,9 +35,9 @@ export function RegisterPage() {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  // Password requirement checks
+  // Password requirement checks (backend fixed - now accepts 8+ chars!)
   const passwordRequirements = [
-    { met: formData.password.length >= 12, text: 'Mindestens 12 Zeichen' },
+    { met: formData.password.length >= 8, text: 'Mindestens 8 Zeichen' },
     { met: /[A-Z]/.test(formData.password), text: 'Ein Großbuchstabe (A-Z)' },
     { met: /[a-z]/.test(formData.password), text: 'Ein Kleinbuchstabe (a-z)' },
     { met: /\d/.test(formData.password), text: 'Eine Zahl (0-9)' },
@@ -190,7 +190,7 @@ export function RegisterPage() {
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Mindestens 12 Zeichen"
+                placeholder="Mindestens 8 Zeichen"
               />
 
               {/* Password Requirements Checklist */}
