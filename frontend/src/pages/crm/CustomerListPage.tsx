@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { DashboardLayout } from '../../components/layout/DashboardLayout';
 
 interface Customer {
   id: string;
@@ -165,10 +166,10 @@ export function CustomerListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-6">
           <div className="md:flex md:items-center md:justify-between">
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-gray-900">Kundenverwaltung (CRM)</h1>
@@ -187,9 +188,6 @@ export function CustomerListPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters and Search */}
         <div className="bg-white shadow rounded-lg p-4 mb-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -411,6 +409,6 @@ export function CustomerListPage() {
           </p>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
