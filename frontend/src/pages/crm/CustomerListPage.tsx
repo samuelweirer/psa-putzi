@@ -1,8 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { DeleteCustomerModal } from '../../components/modals/DeleteCustomerModal';
 import { StatusBadge } from '../../components/common/StatusBadge';
+import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
+import { ErrorEmptyState } from '../../components/common/EmptyState';
+import { api } from '../../lib/api';
 
 interface Customer {
   id: string;
@@ -15,91 +18,10 @@ interface Customer {
   createdAt: string;
 }
 
-// Mock data - will be replaced with API calls in Sprint 4
-const mockCustomers: Customer[] = [
-  {
-    id: '1',
-    companyName: 'ABC GmbH',
-    contactPerson: 'Max Mustermann',
-    email: 'max@abc-gmbh.de',
-    phone: '+49 30 12345678',
-    status: 'active',
-    contractType: 'managed',
-    createdAt: '2024-01-15',
-  },
-  {
-    id: '2',
-    companyName: 'XYZ AG',
-    contactPerson: 'Anna Schmidt',
-    email: 'anna.schmidt@xyz.de',
-    phone: '+49 89 87654321',
-    status: 'prospect',
-    contractType: 'project',
-    createdAt: '2024-02-20',
-  },
-  {
-    id: '3',
-    companyName: 'Tech Solutions Ltd.',
-    contactPerson: 'John Doe',
-    email: 'john@techsolutions.com',
-    phone: '+49 40 11223344',
-    status: 'active',
-    contractType: 'support',
-    createdAt: '2024-03-10',
-  },
-  {
-    id: '4',
-    companyName: 'Digital Media GmbH',
-    contactPerson: 'Sarah Weber',
-    email: 'sarah@digitalmedia.de',
-    phone: '+43 1 5556677',
-    status: 'inactive',
-    contractType: 'managed',
-    createdAt: '2023-11-05',
-  },
-  {
-    id: '5',
-    companyName: 'Consulting Partners',
-    contactPerson: 'Michael Bauer',
-    email: 'm.bauer@consulting.de',
-    phone: '+49 69 99887766',
-    status: 'lead',
-    contractType: 'project',
-    createdAt: '2024-04-01',
-  },
-  {
-    id: '6',
-    companyName: 'IT Services Austria',
-    contactPerson: 'Maria Huber',
-    email: 'maria@itservices.at',
-    phone: '+43 662 333444',
-    status: 'active',
-    contractType: 'managed',
-    createdAt: '2024-01-22',
-  },
-  {
-    id: '7',
-    companyName: 'Software Factory',
-    contactPerson: 'Thomas Klein',
-    email: 'thomas@softwarefactory.de',
-    phone: '+49 30 22334455',
-    status: 'inactive',
-    contractType: 'support',
-    createdAt: '2023-09-14',
-  },
-  {
-    id: '8',
-    companyName: 'Cloud Systems GmbH',
-    contactPerson: 'Lisa Schneider',
-    email: 'lisa@cloudsystems.de',
-    phone: '+49 89 66778899',
-    status: 'active',
-    contractType: 'managed',
-    createdAt: '2024-05-12',
-  },
-];
-
 export function CustomerListPage() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'lead' | 'prospect' | 'active' | 'inactive' | 'churned'>('all');
   const [contractFilter, setContractFilter] = useState<'all' | 'managed' | 'project' | 'support'>('all');
@@ -108,9 +30,28 @@ export function CustomerListPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<{ id: string; name: string } | null>(null);
 
+  // Fetch customers from API
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const response = await api.get('/customers');
+        setCustomers(response.data.data || response.data);
+      } catch (err: any) {
+        console.error('Failed to fetch customers:', err);
+        setError(err.response?.data?.message || 'Fehler beim Laden der Kundendaten');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
   // Filter and search customers
   const filteredCustomers = useMemo(() => {
-    return mockCustomers.filter((customer) => {
+    return customers.filter((customer) => {
       // Search filter
       const matchesSearch =
         searchTerm === '' ||
@@ -127,7 +68,7 @@ export function CustomerListPage() {
 
       return matchesSearch && matchesStatus && matchesContract;
     });
-  }, [searchTerm, statusFilter, contractFilter]);
+  }, [customers, searchTerm, statusFilter, contractFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
@@ -147,19 +88,22 @@ export function CustomerListPage() {
   };
 
   const handleDeleteConfirm = async (customerId: string) => {
-    // Simulate API call for soft delete
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Soft delete customer via API
+      await api.delete(`/customers/${customerId}`);
 
-    // In Sprint 4, this will be:
-    // await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
-    // (Soft delete: sets deleted_at timestamp in database)
+      // Remove customer from local state
+      setCustomers((prev) => prev.filter((c) => c.id !== customerId));
 
-    // Close modal
-    setIsDeleteModalOpen(false);
-    setCustomerToDelete(null);
-
-    // In real app, this would refetch the customer list or remove from state
-    // For now, we just close the modal (customer will disappear on page refresh)
+      // Close modal
+      setIsDeleteModalOpen(false);
+      setCustomerToDelete(null);
+    } catch (err: any) {
+      console.error('Failed to delete customer:', err);
+      setError(err.response?.data?.message || 'Fehler beim Löschen des Kunden');
+      setIsDeleteModalOpen(false);
+      setCustomerToDelete(null);
+    }
   };
 
   const getContractTypeBadge = (type: string) => {
@@ -179,6 +123,37 @@ export function CustomerListPage() {
     };
     return labels[type as keyof typeof labels] || type;
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Kundenverwaltung (CRM)</h1>
+            <p className="mt-1 text-sm text-gray-500">Lädt Kundendaten...</p>
+          </div>
+          <div className="bg-white shadow rounded-lg p-6">
+            <LoadingSkeleton variant="table" count={5} />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Kundenverwaltung (CRM)</h1>
+          </div>
+          <ErrorEmptyState onRetry={() => window.location.reload()} />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -421,14 +396,6 @@ export function CustomerListPage() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Die angezeigten Kundendaten sind Platzhalterdaten.
-            In Sprint 4 wird diese Seite mit dem CRM-Backend-Modul verbunden.
-          </p>
         </div>
       </div>
 
