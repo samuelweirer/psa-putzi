@@ -7,6 +7,7 @@ import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { MFASetupPage } from './pages/auth/MFASetupPage';
 import { MFAVerifyPage } from './pages/auth/MFAVerifyPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { CustomerListPage } from './pages/crm/CustomerListPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 function App() {
@@ -35,6 +36,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MFASetupPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              <ProtectedRoute>
+                <CustomerListPage />
               </ProtectedRoute>
             }
           />
