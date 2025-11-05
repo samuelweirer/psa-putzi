@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { TimeEntryModal, TimeEntryFormData } from '../../components/tickets/TimeEntryModal';
+import { TicketAttachments } from '../../components/tickets/TicketAttachments';
+import { AssignmentWorkflow } from '../../components/tickets/AssignmentWorkflow';
 
 interface Ticket {
   id: string;
@@ -120,7 +123,38 @@ const mockTimeEntries: TimeEntry[] = [
   },
 ];
 
-type TabType = 'details' | 'comments' | 'time' | 'history';
+interface Attachment {
+  id: string;
+  filename: string;
+  size: number;
+  uploadedBy: string;
+  uploadedAt: string;
+  mimeType: string;
+  url: string;
+}
+
+const mockAttachments: Attachment[] = [
+  {
+    id: '1',
+    filename: 'server-screenshot.png',
+    size: 1024567,
+    uploadedBy: 'Max Mustermann',
+    uploadedAt: '2025-11-05T08:40:00',
+    mimeType: 'image/png',
+    url: '#',
+  },
+  {
+    id: '2',
+    filename: 'fehlerlog.txt',
+    size: 45678,
+    uploadedBy: 'Max Mustermann',
+    uploadedAt: '2025-11-05T09:00:00',
+    mimeType: 'text/plain',
+    url: '#',
+  },
+];
+
+type TabType = 'details' | 'comments' | 'time' | 'attachments' | 'history';
 
 export function TicketDetailPage() {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -128,6 +162,9 @@ export function TicketDetailPage() {
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [newComment, setNewComment] = useState('');
   const [isInternal, setIsInternal] = useState(false);
+  const [showTimeEntryModal, setShowTimeEntryModal] = useState(false);
+  const [timeEntries, setTimeEntries] = useState(mockTimeEntries);
+  const [attachments, setAttachments] = useState(mockAttachments);
 
   // In real app, fetch ticket data based on ticketId
   const ticket = mockTicket;
@@ -143,6 +180,66 @@ export function TicketDetailPage() {
 
     setNewComment('');
     // Refresh comments
+  };
+
+  const handleAddTimeEntry = async (entry: TimeEntryFormData) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // In Sprint 5: POST /api/tickets/:id/time-entries
+    // body: entry
+
+    // Add to local state (mock)
+    const newEntry: TimeEntry = {
+      id: String(timeEntries.length + 1),
+      user: 'Current User', // Would be from auth context
+      description: entry.description,
+      hours: entry.hours,
+      date: entry.date,
+      billable: entry.billable,
+    };
+    setTimeEntries([...timeEntries, newEntry]);
+  };
+
+  const handleUploadAttachment = async (file: File) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // In Sprint 5: POST /api/tickets/:id/attachments
+    // body: FormData with file
+
+    // Add to local state (mock)
+    const newAttachment: Attachment = {
+      id: String(attachments.length + 1),
+      filename: file.name,
+      size: file.size,
+      uploadedBy: 'Current User', // Would be from auth context
+      uploadedAt: new Date().toISOString(),
+      mimeType: file.type,
+      url: URL.createObjectURL(file), // Mock URL
+    };
+    setAttachments([...attachments, newAttachment]);
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // In Sprint 5: DELETE /api/tickets/:id/attachments/:attachmentId
+
+    // Remove from local state (mock)
+    setAttachments(attachments.filter((a) => a.id !== attachmentId));
+  };
+
+  const handleAssignTicket = async (userId: string) => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // In Sprint 5: PATCH /api/tickets/:id
+    // body: { assignedToId: userId }
+
+    // In real app, would refetch ticket data
+    console.log('Ticket assigned to user:', userId);
   };
 
   const getStatusBadge = (status: Ticket['status']) => {
@@ -208,8 +305,8 @@ export function TicketDetailPage() {
     });
   };
 
-  const totalHours = mockTimeEntries.reduce((sum, entry) => sum + entry.hours, 0);
-  const billableHours = mockTimeEntries.filter((e) => e.billable).reduce((sum, e) => sum + e.hours, 0);
+  const totalHours = timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
+  const billableHours = timeEntries.filter((e) => e.billable).reduce((sum, e) => sum + e.hours, 0);
 
   return (
     <DashboardLayout>
@@ -265,6 +362,15 @@ export function TicketDetailPage() {
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-3 md:mt-0 md:ml-4">
+              <AssignmentWorkflow
+                currentAssignee={
+                  ticket.assignedToId
+                    ? { id: ticket.assignedToId, name: ticket.assignedToName || '' }
+                    : undefined
+                }
+                onAssign={handleAssignTicket}
+                ticketId={ticket.id}
+              />
               <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                 ✏️ Bearbeiten
               </button>
@@ -310,6 +416,16 @@ export function TicketDetailPage() {
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               ⏱️ Zeiterfassung ({totalHours.toFixed(2)}h)
+            </button>
+            <button
+              onClick={() => setActiveTab('attachments')}
+              className={`${
+                activeTab === 'attachments'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              📎 Anhänge ({attachments.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -473,7 +589,10 @@ export function TicketDetailPage() {
             <div className="bg-white shadow rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Zeiteinträge</h3>
-                <button className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                <button
+                  onClick={() => setShowTimeEntryModal(true)}
+                  className="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
                   ➕ Zeit erfassen
                 </button>
               </div>
@@ -499,7 +618,7 @@ export function TicketDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {mockTimeEntries.map((entry) => (
+                    {timeEntries.map((entry) => (
                       <tr key={entry.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-sm text-gray-900">{entry.user}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{entry.description}</td>
@@ -523,6 +642,15 @@ export function TicketDetailPage() {
           </div>
         )}
 
+        {activeTab === 'attachments' && (
+          <TicketAttachments
+            ticketId={ticket.id}
+            attachments={attachments}
+            onUpload={handleUploadAttachment}
+            onDelete={handleDeleteAttachment}
+          />
+        )}
+
         {activeTab === 'history' && (
           <div className="bg-white shadow rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Änderungsverlauf</h3>
@@ -531,6 +659,14 @@ export function TicketDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Time Entry Modal */}
+        <TimeEntryModal
+          isOpen={showTimeEntryModal}
+          onClose={() => setShowTimeEntryModal(false)}
+          onSubmit={handleAddTimeEntry}
+          ticketId={ticket.id}
+        />
 
         {/* Development Note */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
