@@ -35,28 +35,29 @@ export function RegisterPage() {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
+  // Password requirement checks
+  const passwordRequirements = [
+    { met: formData.password.length >= 12, text: 'Mindestens 12 Zeichen' },
+    { met: /[A-Z]/.test(formData.password), text: 'Ein Großbuchstabe (A-Z)' },
+    { met: /[a-z]/.test(formData.password), text: 'Ein Kleinbuchstabe (a-z)' },
+    { met: /\d/.test(formData.password), text: 'Eine Zahl (0-9)' },
+    { met: /[^a-zA-Z0-9]/.test(formData.password), text: 'Ein Sonderzeichen (!@#$%^&*)' },
+  ];
+
   const validateForm = (): string | null => {
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
       return 'Bitte füllen Sie alle Felder aus.';
     }
     if (formData.password !== formData.confirmPassword) {
-      return 'Passwörter stimmen nicht überein.';
+      return 'Die Passwörter stimmen nicht überein.';
     }
-    if (formData.password.length < 8) {
-      return 'Passwort muss mindestens 8 Zeichen lang sein.';
+
+    // Check all password requirements
+    const unmetRequirements = passwordRequirements.filter(req => !req.met);
+    if (unmetRequirements.length > 0) {
+      return `Passwort erfüllt nicht alle Anforderungen: ${unmetRequirements.map(r => r.text).join(', ')}`;
     }
-    if (!/[A-Z]/.test(formData.password)) {
-      return 'Passwort muss mindestens einen Großbuchstaben enthalten.';
-    }
-    if (!/[a-z]/.test(formData.password)) {
-      return 'Passwort muss mindestens einen Kleinbuchstaben enthalten.';
-    }
-    if (!/\d/.test(formData.password)) {
-      return 'Passwort muss mindestens eine Zahl enthalten.';
-    }
-    if (!/[^a-zA-Z0-9]/.test(formData.password)) {
-      return 'Passwort muss mindestens ein Sonderzeichen enthalten.';
-    }
+
     return null;
   };
 
@@ -189,31 +190,23 @@ export function RegisterPage() {
                 value={formData.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Min. 8 Zeichen"
+                placeholder="Mindestens 12 Zeichen"
               />
 
-              {/* Password Strength Indicator */}
+              {/* Password Requirements Checklist */}
               {formData.password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Passwortstärke:</span>
-                    <span className={`text-xs font-medium ${
-                      passwordStrength.score <= 2 ? 'text-red-600' :
-                      passwordStrength.score <= 3 ? 'text-yellow-600' :
-                      'text-green-600'
-                    }`}>
-                      {passwordStrength.label}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${passwordStrength.color}`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
-                    />
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Verwenden Sie Groß- und Kleinbuchstaben, Zahlen und Sonderzeichen
-                  </p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs font-medium text-gray-700">Passwort-Anforderungen:</p>
+                  {passwordRequirements.map((req, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <span className={`text-xs ${req.met ? 'text-green-600' : 'text-gray-400'}`}>
+                        {req.met ? '✓' : '○'}
+                      </span>
+                      <span className={`text-xs ${req.met ? 'text-green-600' : 'text-gray-600'}`}>
+                        {req.text}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
