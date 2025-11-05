@@ -1,6 +1,7 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '../../../components/layout/DashboardLayout';
+import { api } from '../../../lib/api';
 
 interface FormData {
   name: string;
@@ -13,19 +14,32 @@ interface FormData {
   notes: string;
 }
 
-const mockCustomer = {
-  id: '1',
-  companyName: 'ABC GmbH',
-};
+interface Customer {
+  id: string;
+  companyName: string;
+}
 
 export function CreateLocationPage() {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const customer = mockCustomer;
+  // Fetch customer name for breadcrumb
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!customerId) return;
+      try {
+        const response = await api.get(`/customers/${customerId}`);
+        setCustomer(response.data.data || response.data);
+      } catch (err) {
+        console.error('Failed to fetch customer:', err);
+      }
+    };
+    fetchCustomer();
+  }, [customerId]);
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -75,12 +89,8 @@ export function CreateLocationPage() {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // In Sprint 4:
-      // POST /api/customers/:customerId/locations
-      // body: formData
+      // Create location via API
+      await api.post(`/customers/${customerId}/locations`, formData);
 
       setSuccess(true);
 
@@ -88,8 +98,9 @@ export function CreateLocationPage() {
       setTimeout(() => {
         navigate(`/customers/${customerId}/locations`);
       }, 1500);
-    } catch (err) {
-      setError('Fehler beim Erstellen des Standorts. Bitte versuchen Sie es erneut.');
+    } catch (err: any) {
+      console.error('Failed to create location:', err);
+      setError(err.response?.data?.message || 'Fehler beim Erstellen des Standorts. Bitte versuchen Sie es erneut.');
       setIsLoading(false);
     }
   };
@@ -130,7 +141,7 @@ export function CreateLocationPage() {
               <li className="text-gray-500">→</li>
               <li>
                 <Link to={`/customers/${customerId}`} className="text-blue-600 hover:text-blue-800">
-                  {customer.companyName}
+                  {customer?.companyName || 'Kunde'}
                 </Link>
               </li>
               <li className="text-gray-500">→</li>
@@ -147,7 +158,7 @@ export function CreateLocationPage() {
             </ol>
           </nav>
           <h1 className="text-2xl font-bold text-gray-900">Neuen Standort hinzufügen</h1>
-          <p className="mt-1 text-sm text-gray-500">für {customer.companyName}</p>
+          <p className="mt-1 text-sm text-gray-500">für {customer?.companyName || 'Kunde'}</p>
         </div>
 
         {error && (
@@ -335,14 +346,6 @@ export function CreateLocationPage() {
             </button>
           </div>
         </form>
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Diese Seite simuliert die Standorterstellung
-            (Customer ID: {customerId}). In Sprint 4 wird sie mit dem CRM-Backend-Modul verbunden.
-          </p>
-        </div>
       </div>
     </DashboardLayout>
   );
