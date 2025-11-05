@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { DeleteCustomerModal } from '../../components/modals/DeleteCustomerModal';
+import { StatusBadge } from '../../components/common/StatusBadge';
 
 interface Customer {
   id: string;
@@ -9,7 +10,7 @@ interface Customer {
   contactPerson: string;
   email: string;
   phone: string;
-  status: 'active' | 'inactive';
+  status: 'lead' | 'prospect' | 'active' | 'inactive' | 'churned';
   contractType: 'managed' | 'project' | 'support';
   createdAt: string;
 }
@@ -32,7 +33,7 @@ const mockCustomers: Customer[] = [
     contactPerson: 'Anna Schmidt',
     email: 'anna.schmidt@xyz.de',
     phone: '+49 89 87654321',
-    status: 'active',
+    status: 'prospect',
     contractType: 'project',
     createdAt: '2024-02-20',
   },
@@ -62,7 +63,7 @@ const mockCustomers: Customer[] = [
     contactPerson: 'Michael Bauer',
     email: 'm.bauer@consulting.de',
     phone: '+49 69 99887766',
-    status: 'active',
+    status: 'lead',
     contractType: 'project',
     createdAt: '2024-04-01',
   },
@@ -100,7 +101,7 @@ const mockCustomers: Customer[] = [
 
 export function CustomerListPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'lead' | 'prospect' | 'active' | 'inactive' | 'churned'>('all');
   const [contractFilter, setContractFilter] = useState<'all' | 'managed' | 'project' | 'support'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -179,16 +180,6 @@ export function CustomerListPage() {
     return labels[type as keyof typeof labels] || type;
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === 'active'
-      ? 'bg-green-100 text-green-800'
-      : 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusLabel = (status: string) => {
-    return status === 'active' ? 'Aktiv' : 'Inaktiv';
-  };
-
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -248,8 +239,11 @@ export function CustomerListPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">Alle</option>
-                <option value="active">Aktiv</option>
-                <option value="inactive">Inaktiv</option>
+                <option value="lead">🔍 Lead</option>
+                <option value="prospect">👀 Interessent</option>
+                <option value="active">✅ Aktiv</option>
+                <option value="inactive">💤 Inaktiv</option>
+                <option value="churned">❌ Gekündigt</option>
               </select>
             </div>
 
@@ -324,9 +318,7 @@ export function CustomerListPage() {
                         <div className="text-xs text-gray-500">{customer.phone}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(customer.status)}`}>
-                          {getStatusLabel(customer.status)}
-                        </span>
+                        <StatusBadge status={customer.status} size="sm" />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getContractTypeBadge(customer.contractType)}`}>

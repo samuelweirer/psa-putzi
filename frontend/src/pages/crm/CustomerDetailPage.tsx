@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { DeleteCustomerModal } from '../../components/modals/DeleteCustomerModal';
+import { StatusWorkflow } from '../../components/common/StatusWorkflow';
 
 interface Customer {
   id: string;
@@ -9,7 +10,7 @@ interface Customer {
   contactPerson: string;
   email: string;
   phone: string;
-  status: 'active' | 'inactive';
+  status: 'lead' | 'prospect' | 'active' | 'inactive' | 'churned';
   contractType: 'managed' | 'project' | 'support';
   address: string;
   city: string;
@@ -106,9 +107,7 @@ export function CustomerDetailPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  // In real app, fetch customer data based on customerId
-  const customer = mockCustomer;
+  const [customer, setCustomer] = useState<Customer>(mockCustomer);
 
   const handleDeleteCustomer = async (id: string) => {
     // Simulate API call for soft delete
@@ -127,14 +126,18 @@ export function CustomerDetailPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === 'active'
-      ? 'bg-green-100 text-green-800'
-      : 'bg-gray-100 text-gray-800';
-  };
+  const handleStatusChange = async (newStatus: 'lead' | 'prospect' | 'active' | 'inactive' | 'churned') => {
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const getStatusLabel = (status: string) => {
-    return status === 'active' ? 'Aktiv' : 'Inaktiv';
+    // In Sprint 4, this will be:
+    // await fetch(`/api/customers/${customerId}`, {
+    //   method: 'PATCH',
+    //   body: JSON.stringify({ status: newStatus }),
+    // });
+
+    // Update local state
+    setCustomer((prev) => ({ ...prev, status: newStatus }));
   };
 
   const getContractTypeBadge = (type: string) => {
@@ -229,9 +232,10 @@ export function CustomerDetailPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-3">
                 <h1 className="text-2xl font-bold text-gray-900">{customer.companyName}</h1>
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(customer.status)}`}>
-                  {getStatusLabel(customer.status)}
-                </span>
+                <StatusWorkflow
+                  currentStatus={customer.status}
+                  onStatusChange={handleStatusChange}
+                />
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getContractTypeBadge(customer.contractType)}`}>
                   {getContractTypeLabel(customer.contractType)}
                 </span>
