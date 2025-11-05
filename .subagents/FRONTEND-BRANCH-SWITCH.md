@@ -113,20 +113,30 @@ git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG  # ✅ Unified branch
 
 **1. Morning - Start of Session:**
 ```bash
-git pull origin claude/session-011CUa86VGPkHjf5rHUmwfvG  # Get latest from both agents
+# IMPORTANT: You're in the same directory, same branch as backend agent!
+# Changes are IMMEDIATELY visible - no pull needed between local agents!
+
+git status  # Verify you're on: claude/session-011CUa86VGPkHjf5rHUmwfvG
+
+# ONLY pull if starting a NEW Claude Code session (to sync from GitHub):
+# git pull origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 **2. During Work:**
 ```bash
-# Make your changes
-# Commit frequently
+# Make your changes - backend agent sees them immediately
+# Commit frequently to save your work
 git add .
 git commit -m "feat(frontend): your changes"
+
+# Push immediately so work is saved to GitHub
+git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 **3. End of Session:**
 ```bash
-git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG  # Share your work
+# Final push to GitHub (if you haven't pushed recently)
+git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 ---

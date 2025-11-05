@@ -201,25 +201,33 @@ frontend/
 
 ### Morning (Start of Day)
 ```bash
-# Get latest changes
-git pull origin develop
+# UNIFIED BRANCH: All agents work on same branch, same directory!
+# Changes between local agents are IMMEDIATELY visible - no pull needed!
 
-# Check for backend updates
+# Verify you're on the unified branch
+git status  # Should show: claude/session-011CUa86VGPkHjf5rHUmwfvG
+
+# Check for backend updates (in same directory!)
 cat .subagents/status/auth-remaining-work.md
 
 # Check for issues
 ls -la .subagents/issues/
+
+# ONLY pull if starting a NEW Claude Code session (to sync from GitHub):
+# git pull origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 ### During Work
 ```bash
-# Make changes
+# Make changes (backend agent sees them immediately!)
 # Test locally (npm run dev)
 # Commit frequently
 
 git add .
 git commit -m "feat(frontend): <what you did>"
-git push origin feature/frontend-auth-ui
+
+# Push immediately to save work to GitHub
+git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 ### End of Day
@@ -227,10 +235,10 @@ git push origin feature/frontend-auth-ui
 # Update status file
 nano .subagents/status/frontend-agent-2025-11-04.md
 
-# Commit status
+# Commit and push status
 git add .subagents/status/frontend-agent-2025-11-04.md
 git commit -m "docs(status): frontend agent daily update"
-git push
+git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 ---

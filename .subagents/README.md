@@ -85,10 +85,16 @@
 
 **Morning (Start of Session):**
 ```bash
-1. git pull                          # Get latest changes
+# UNIFIED BRANCH WORKFLOW (all agents on same branch, same directory)
+# Changes are immediately visible - no pull needed between local agents!
+
+1. git status                        # Verify you're on unified branch
 2. Check .subagents/issues/          # Any blockers for you?
 3. Check .subagents/shared/          # Any new types/constants?
 4. Review other agents' status       # What are they doing?
+
+# ONLY IF starting fresh session (to sync with GitHub):
+# git pull origin claude/session-011CUa86VGPkHjf5rHUmwfvG
 ```
 
 **During Work:**

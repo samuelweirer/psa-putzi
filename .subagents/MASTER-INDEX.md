@@ -501,8 +501,10 @@ Throughout: [Main Agent] PM coordination (Opus 4) 👔
 - [ ] Update your status file (`.subagents/status/`)
 - [ ] Check other agents' status files
 - [ ] Check for issues affecting you (`.subagents/issues/`)
-- [ ] Pull latest changes (`git pull origin develop`)
-- [ ] Commit and push your work (`git push`)
+- [ ] Verify branch (`git status` - should show unified branch)
+- [ ] Commit and push your work (`git push origin claude/session-011CUa86VGPkHjf5rHUmwfvG`)
+
+**Note:** With unified branch strategy, NO pull needed between local agents (same directory, same branch). Only pull when starting NEW Claude Code session to sync from GitHub.
 
 **Every Week:**
 - [ ] Update completion percentage

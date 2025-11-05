@@ -68,19 +68,22 @@
 ### Daily Routine
 ```
 Morning (09:00):
-- Review all agent status files
-- Check for 🔴 blockers
+- Review all agent status files (.subagents/status/)
+- Check for 🔴 blockers (.subagents/issues/)
 - Prioritize issues
 - Update project dashboard
+- Note: NO git pull needed (unified branch, same directory)
 
 During Day:
 - Respond to escalations (< 2 hours)
 - Mediate conflicts
 - Approve handovers
 - Code review (high-risk changes)
+- Monitor agent commits (git log)
 
 End of Day (17:00):
 - Update project status
+- Ensure all agents pushed to GitHub
 - Plan tomorrow's coordination
 - Send updates to stakeholders
 ```
