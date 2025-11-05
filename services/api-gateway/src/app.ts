@@ -7,12 +7,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import { logger } from './utils/logger';
 import { HealthResponse } from './types';
 import proxyRoutes from './routes/proxy.routes';
 import protectedRoutes from './routes/protected.routes';
 import { globalRateLimiter } from './middleware/rate-limit.middleware';
 import { circuitBreakerRegistry } from './middleware/circuit-breaker.middleware';
+import { swaggerSpec } from './config/swagger';
 
 // Load environment variables
 dotenv.config();
@@ -109,13 +111,46 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
+ * API Documentation (Swagger/OpenAPI)
+ * Served before rate limiting to allow easy access
+ */
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'PSA Platform API Gateway Documentation',
+  customCss: '.swagger-ui .topbar { display: none }',
+}));
+
+/**
+ * OpenAPI spec JSON endpoint
+ */
+app.get('/api-docs.json', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+/**
  * Global rate limiting
- * Applied to all routes except health checks
+ * Applied to all routes except health checks and API docs
  */
 app.use(globalRateLimiter);
 
 /**
  * Basic health check endpoint
+ *
+ * @openapi
+ * /health:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Basic health check
+ *     description: Returns basic health status of the API Gateway
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Health'
  */
 app.get('/health', async (_req: Request, res: Response) => {
   const uptime = process.uptime();
@@ -134,6 +169,28 @@ app.get('/health', async (_req: Request, res: Response) => {
 
 /**
  * Detailed health check endpoint with circuit breaker status
+ *
+ * @openapi
+ * /health/detailed:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Detailed health check with circuit breaker status
+ *     description: Returns detailed health status including circuit breaker information for all services
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Service is healthy or degraded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DetailedHealth'
+ *       503:
+ *         description: Service is unhealthy (one or more circuits are open)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DetailedHealth'
  */
 app.get('/health/detailed', async (_req: Request, res: Response) => {
   const uptime = process.uptime();
