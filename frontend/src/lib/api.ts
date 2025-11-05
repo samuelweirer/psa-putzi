@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// Use API Gateway (port 3000) instead of direct service access
+// Gateway routes all requests to appropriate backend services
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 export const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
