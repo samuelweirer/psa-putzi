@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { DeleteCustomerModal } from '../../components/modals/DeleteCustomerModal';
 
 interface Customer {
   id: string;
@@ -102,10 +103,29 @@ type TabType = 'overview' | 'tickets' | 'contracts' | 'invoices';
 
 export function CustomerDetailPage() {
   const { customerId } = useParams<{ customerId: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // In real app, fetch customer data based on customerId
   const customer = mockCustomer;
+
+  const handleDeleteCustomer = async (id: string) => {
+    // Simulate API call for soft delete
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // In Sprint 4, this will be:
+    // await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+    // (Soft delete: sets deleted_at timestamp in database)
+
+    // Close modal
+    setIsDeleteModalOpen(false);
+
+    // Navigate back to customer list with success message
+    navigate('/customers', {
+      state: { message: `Kunde "${customer.companyName}" wurde gelöscht.` },
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     return status === 'active'
@@ -227,6 +247,12 @@ export function CustomerDetailPage() {
               >
                 ✏️ Bearbeiten
               </Link>
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                🗑️ Löschen
+              </button>
               <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 ➕ Ticket erstellen
               </button>
@@ -476,6 +502,15 @@ export function CustomerDetailPage() {
           </p>
         </div>
       </div>
+
+      {/* Delete Customer Modal */}
+      <DeleteCustomerModal
+        isOpen={isDeleteModalOpen}
+        customerName={customer.companyName}
+        customerId={customerId || ''}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteCustomer}
+      />
     </DashboardLayout>
   );
 }
