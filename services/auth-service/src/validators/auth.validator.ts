@@ -19,8 +19,8 @@ export const registerSchema = Joi.object({
     'string.email': 'Please provide a valid email address',
     'any.required': 'Email is required'
   }),
-  password: Joi.string().min(12).required().messages({
-    'string.min': 'Password must be at least 12 characters long',
+  password: Joi.string().min(8).required().messages({
+    'string.min': 'Password must be at least 8 characters long',
     'any.required': 'Password is required'
   }),
   first_name: Joi.string().min(1).max(100).required().messages({
@@ -74,8 +74,8 @@ export const passwordResetConfirmSchema = Joi.object({
   token: Joi.string().required().messages({
     'any.required': 'Reset token is required'
   }),
-  new_password: Joi.string().min(12).required().messages({
-    'string.min': 'Password must be at least 12 characters long',
+  new_password: Joi.string().min(8).required().messages({
+    'string.min': 'Password must be at least 8 characters long',
     'any.required': 'New password is required'
   })
 });
@@ -84,8 +84,8 @@ export const changePasswordSchema = Joi.object({
   old_password: Joi.string().required().messages({
     'any.required': 'Current password is required'
   }),
-  new_password: Joi.string().min(12).required().messages({
-    'string.min': 'New password must be at least 12 characters long',
+  new_password: Joi.string().min(8).required().messages({
+    'string.min': 'New password must be at least 8 characters long',
     'any.required': 'New password is required'
   })
 });
