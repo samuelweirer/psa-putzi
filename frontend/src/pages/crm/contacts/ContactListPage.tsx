@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { DashboardLayout } from '../../../components/layout/DashboardLayout';
 import { DeleteCustomerModal } from '../../../components/modals/DeleteCustomerModal';
+import { LoadingSkeleton } from '../../../components/common/LoadingSkeleton';
+import { ErrorEmptyState } from '../../../components/common/EmptyState';
+import { api } from '../../../lib/api';
 
 interface Contact {
   id: string;
@@ -16,60 +19,47 @@ interface Contact {
   notes: string;
 }
 
-// Mock data - will be replaced with API calls in Sprint 4
-const mockContacts: Contact[] = [
-  {
-    id: '1',
-    firstName: 'Max',
-    lastName: 'Mustermann',
-    email: 'max.mustermann@abc-gmbh.de',
-    phone: '+49 30 12345678',
-    jobTitle: 'Geschäftsführer',
-    isPrimary: true,
-    isBilling: true,
-    isTechnical: false,
-    notes: 'Hauptansprechpartner',
-  },
-  {
-    id: '2',
-    firstName: 'Anna',
-    lastName: 'Schmidt',
-    email: 'anna.schmidt@abc-gmbh.de',
-    phone: '+49 30 12345679',
-    jobTitle: 'IT-Leiterin',
-    isPrimary: false,
-    isBilling: false,
-    isTechnical: true,
-    notes: 'Verantwortlich für alle technischen Belange',
-  },
-  {
-    id: '3',
-    firstName: 'Thomas',
-    lastName: 'Weber',
-    email: 'thomas.weber@abc-gmbh.de',
-    phone: '+49 30 12345680',
-    jobTitle: 'Buchhaltung',
-    isPrimary: false,
-    isBilling: true,
-    isTechnical: false,
-    notes: 'Rechnungsempfänger',
-  },
-];
-
-const mockCustomer = {
-  id: '1',
-  companyName: 'ABC GmbH',
-};
+interface Customer {
+  id: string;
+  companyName: string;
+}
 
 export function ContactListPage() {
   const { customerId } = useParams<{ customerId: string }>();
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  // In Sprint 4, this will fetch from: GET /api/customers/:customerId/contacts
-  const customer = mockCustomer;
-  const contacts = mockContacts;
+  // Fetch customer and contacts from API
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!customerId) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch customer details
+        const customerResponse = await api.get(`/customers/${customerId}`);
+        setCustomer(customerResponse.data.data || customerResponse.data);
+
+        // Fetch contacts for this customer
+        const contactsResponse = await api.get(`/customers/${customerId}/contacts`);
+        setContacts(contactsResponse.data.data || contactsResponse.data);
+      } catch (err: any) {
+        console.error('Failed to fetch contacts:', err);
+        setError(err.response?.data?.message || 'Fehler beim Laden der Kontakte');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [customerId]);
 
   const filteredContacts = contacts.filter((contact) => {
     if (!searchTerm) return true;
@@ -92,14 +82,53 @@ export function ContactListPage() {
   };
 
   const handleDeleteConfirm = async (contactId: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Delete contact via API
+      await api.delete(`/customers/${customerId}/contacts/${contactId}`);
 
-    // In Sprint 4: DELETE /api/contacts/:id
+      // Remove from local state
+      setContacts((prev) => prev.filter((c) => c.id !== contactId));
 
-    setIsDeleteModalOpen(false);
-    setContactToDelete(null);
+      setIsDeleteModalOpen(false);
+      setContactToDelete(null);
+    } catch (err: any) {
+      console.error('Failed to delete contact:', err);
+      setError(err.response?.data?.message || 'Fehler beim Löschen des Kontakts');
+      setIsDeleteModalOpen(false);
+      setContactToDelete(null);
+    }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Kontakte</h1>
+            <p className="mt-1 text-sm text-gray-500">Lädt Kontaktdaten...</p>
+          </div>
+          <div className="bg-white shadow rounded-lg p-6">
+            <LoadingSkeleton variant="card" count={3} />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state
+  if (error || !customer) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Kontakte</h1>
+          </div>
+          <ErrorEmptyState onRetry={() => window.location.reload()} />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -280,15 +309,6 @@ export function ContactListPage() {
             ))}
           </div>
         )}
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Die angezeigten Kontakte sind Platzhalterdaten
-            (Customer ID: {customerId}). In Sprint 4 wird diese Seite mit dem CRM-Backend-Modul
-            verbunden.
-          </p>
-        </div>
       </div>
 
       {/* Delete Contact Modal */}

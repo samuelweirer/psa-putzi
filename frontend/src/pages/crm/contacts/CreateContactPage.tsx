@@ -1,6 +1,7 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '../../../components/layout/DashboardLayout';
+import { api } from '../../../lib/api';
 
 interface FormData {
   firstName: string;
@@ -14,19 +15,32 @@ interface FormData {
   notes: string;
 }
 
-const mockCustomer = {
-  id: '1',
-  companyName: 'ABC GmbH',
-};
+interface Customer {
+  id: string;
+  companyName: string;
+}
 
 export function CreateContactPage() {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const customer = mockCustomer;
+  // Fetch customer name for breadcrumb
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!customerId) return;
+      try {
+        const response = await api.get(`/customers/${customerId}`);
+        setCustomer(response.data.data || response.data);
+      } catch (err) {
+        console.error('Failed to fetch customer:', err);
+      }
+    };
+    fetchCustomer();
+  }, [customerId]);
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -84,12 +98,8 @@ export function CreateContactPage() {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // In Sprint 4:
-      // POST /api/customers/:customerId/contacts
-      // body: formData
+      // Create contact via API
+      await api.post(`/customers/${customerId}/contacts`, formData);
 
       setSuccess(true);
 
@@ -97,8 +107,9 @@ export function CreateContactPage() {
       setTimeout(() => {
         navigate(`/customers/${customerId}/contacts`);
       }, 1500);
-    } catch (err) {
-      setError('Fehler beim Erstellen des Kontakts. Bitte versuchen Sie es erneut.');
+    } catch (err: any) {
+      console.error('Failed to create contact:', err);
+      setError(err.response?.data?.message || 'Fehler beim Erstellen des Kontakts. Bitte versuchen Sie es erneut.');
       setIsLoading(false);
     }
   };
@@ -139,7 +150,7 @@ export function CreateContactPage() {
               <li className="text-gray-500">→</li>
               <li>
                 <Link to={`/customers/${customerId}`} className="text-blue-600 hover:text-blue-800">
-                  {customer.companyName}
+                  {customer?.companyName || 'Kunde'}
                 </Link>
               </li>
               <li className="text-gray-500">→</li>
@@ -373,14 +384,6 @@ export function CreateContactPage() {
             </button>
           </div>
         </form>
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Diese Seite simuliert die Kontakterstellung
-            (Customer ID: {customerId}). In Sprint 4 wird sie mit dem CRM-Backend-Modul verbunden.
-          </p>
-        </div>
       </div>
     </DashboardLayout>
   );
