@@ -1,6 +1,8 @@
 /**
  * Express application configuration
  */
-import { Express } from 'express';
+import express, { Express } from 'express';
 export declare function createApp(): Express;
+declare const _default: express.Express;
+export default _default;
 //# sourceMappingURL=app.d.ts.map

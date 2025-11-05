@@ -5,6 +5,8 @@
 import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './utils/swagger';
 import customerRoutes from './routes/customer.routes';
 import contactRoutes from './routes/contact.routes';
 import locationRoutes from './routes/location.routes';
@@ -48,6 +50,12 @@ export function createApp(): Express {
       timestamp: new Date().toISOString(),
     });
   });
+
+  // API Documentation
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'PSA CRM API Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+  }));
 
   // Routes
   app.use('/api/v1/customers', customerRoutes);

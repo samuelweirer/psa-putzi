@@ -23,6 +23,7 @@
   "author": "PSA-Platform Team",
   "license": "UNLICENSED",
   "dependencies": {
+    "amqplib": "^0.10.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -34,8 +35,7 @@
     "pg": "^8.11.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "winston": "^3.11.0",
-    "amqplib": "^0.10.3"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

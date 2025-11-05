@@ -10,6 +10,8 @@ exports.createApp = createApp;
 const express_1 = __importDefault(require("express"));
 const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swagger_1 = require("./utils/swagger");
 const customer_routes_1 = __importDefault(require("./routes/customer.routes"));
 const contact_routes_1 = __importDefault(require("./routes/contact.routes"));
 const location_routes_1 = __importDefault(require("./routes/location.routes"));
@@ -47,6 +49,11 @@ function createApp() {
             timestamp: new Date().toISOString(),
         });
     });
+    // API Documentation
+    app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_1.swaggerSpec, {
+        customSiteTitle: 'PSA CRM API Documentation',
+        customCss: '.swagger-ui .topbar { display: none }',
+    }));
     // Routes
     app.use('/api/v1/customers', customer_routes_1.default);
     app.use('/api/v1/contacts', contact_routes_1.default);
@@ -57,4 +64,6 @@ function createApp() {
     app.use(error_middleware_1.errorHandler);
     return app;
 }
+// Default export for tests
+exports.default = createApp();
 //# sourceMappingURL=app.js.map
