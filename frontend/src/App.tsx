@@ -11,6 +11,8 @@ import { CustomerListPage } from './pages/crm/CustomerListPage';
 import { CustomerDetailPage } from './pages/crm/CustomerDetailPage';
 import { CreateCustomerPage } from './pages/crm/CreateCustomerPage';
 import { EditCustomerPage } from './pages/crm/EditCustomerPage';
+import { ContactListPage } from './pages/crm/contacts/ContactListPage';
+import { CreateContactPage } from './pages/crm/contacts/CreateContactPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 function App() {
@@ -63,6 +65,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <EditCustomerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers/:customerId/contacts"
+            element={
+              <ProtectedRoute>
+                <ContactListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers/:customerId/contacts/new"
+            element={
+              <ProtectedRoute>
+                <CreateContactPage />
               </ProtectedRoute>
             }
           />
