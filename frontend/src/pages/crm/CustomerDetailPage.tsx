@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { DeleteCustomerModal } from '../../components/modals/DeleteCustomerModal';
 import { StatusWorkflow } from '../../components/common/StatusWorkflow';
+import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
+import { ErrorEmptyState } from '../../components/common/EmptyState';
+import { api } from '../../lib/api';
 
 interface Customer {
   id: string;
@@ -48,96 +51,81 @@ interface Invoice {
   status: 'paid' | 'pending' | 'overdue';
 }
 
-// Mock data - will be replaced with API calls in Sprint 4
-const mockCustomer: Customer = {
-  id: '1',
-  companyName: 'ABC GmbH',
-  contactPerson: 'Max Mustermann',
-  email: 'max@abc-gmbh.de',
-  phone: '+49 30 12345678',
-  status: 'active',
-  contractType: 'managed',
-  address: 'Hauptstraße 123',
-  city: 'Berlin',
-  postalCode: '10115',
-  country: 'Deutschland',
-  website: 'www.abc-gmbh.de',
-  taxId: 'DE123456789',
-  createdAt: '2024-01-15',
-  lastActivity: '2025-11-04',
-};
-
-const mockTickets: Ticket[] = [
-  { id: '1', title: 'E-Mail-Server nicht erreichbar', status: 'open', priority: 'high', createdAt: '2025-11-04' },
-  { id: '2', title: 'VPN-Zugang für neuen Mitarbeiter', status: 'in_progress', priority: 'medium', createdAt: '2025-11-03' },
-  { id: '3', title: 'Drucker offline', status: 'closed', priority: 'low', createdAt: '2025-11-01' },
-];
-
-const mockContracts: Contract[] = [
-  {
-    id: '1',
-    name: 'Managed Services Vertrag',
-    type: 'managed',
-    startDate: '2024-01-01',
-    endDate: '2025-12-31',
-    monthlyValue: '€2,500',
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Backup-Service',
-    type: 'support',
-    startDate: '2024-06-01',
-    endDate: '2025-05-31',
-    monthlyValue: '€500',
-    status: 'active',
-  },
-];
-
-const mockInvoices: Invoice[] = [
-  { id: '1', number: 'RE-2025-001', date: '2025-11-01', amount: '€3,000', status: 'pending' },
-  { id: '2', number: 'RE-2025-002', date: '2025-10-01', amount: '€3,000', status: 'paid' },
-  { id: '3', number: 'RE-2025-003', date: '2025-09-01', amount: '€3,000', status: 'paid' },
-];
-
 type TabType = 'overview' | 'tickets' | 'contracts' | 'invoices';
 
 export function CustomerDetailPage() {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [customer, setCustomer] = useState<Customer>(mockCustomer);
+
+  // Fetch customer data from API
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      if (!customerId) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch customer details
+        const customerResponse = await api.get(`/customers/${customerId}`);
+        setCustomer(customerResponse.data.data || customerResponse.data);
+
+        // Note: Tickets, contracts, and invoices will be integrated in their respective modules
+        // For now, they remain empty arrays
+        setTickets([]);
+        setContracts([]);
+        setInvoices([]);
+      } catch (err: any) {
+        console.error('Failed to fetch customer:', err);
+        setError(err.response?.data?.message || 'Fehler beim Laden der Kundendaten');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCustomerData();
+  }, [customerId]);
 
   const handleDeleteCustomer = async (id: string) => {
-    // Simulate API call for soft delete
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Soft delete customer via API
+      await api.delete(`/customers/${id}`);
 
-    // In Sprint 4, this will be:
-    // await fetch(`/api/customers/${id}`, { method: 'DELETE' });
-    // (Soft delete: sets deleted_at timestamp in database)
+      // Close modal
+      setIsDeleteModalOpen(false);
 
-    // Close modal
-    setIsDeleteModalOpen(false);
-
-    // Navigate back to customer list with success message
-    navigate('/customers', {
-      state: { message: `Kunde "${customer.companyName}" wurde gelöscht.` },
-    });
+      // Navigate back to customer list with success message
+      navigate('/customers', {
+        state: { message: `Kunde "${customer?.companyName}" wurde gelöscht.` },
+      });
+    } catch (err: any) {
+      console.error('Failed to delete customer:', err);
+      setError(err.response?.data?.message || 'Fehler beim Löschen des Kunden');
+      setIsDeleteModalOpen(false);
+    }
   };
 
   const handleStatusChange = async (newStatus: 'lead' | 'prospect' | 'active' | 'inactive' | 'churned') => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (!customer) return;
 
-    // In Sprint 4, this will be:
-    // await fetch(`/api/customers/${customerId}`, {
-    //   method: 'PATCH',
-    //   body: JSON.stringify({ status: newStatus }),
-    // });
+    try {
+      // Update customer status via API
+      await api.patch(`/customers/${customerId}`, { status: newStatus });
 
-    // Update local state
-    setCustomer((prev) => ({ ...prev, status: newStatus }));
+      // Update local state
+      setCustomer((prev) => prev ? { ...prev, status: newStatus } : null);
+    } catch (err: any) {
+      console.error('Failed to update customer status:', err);
+      setError(err.response?.data?.message || 'Fehler beim Aktualisieren des Status');
+    }
   };
 
   const getContractTypeBadge = (type: string) => {
@@ -211,6 +199,53 @@ export function CustomerDetailPage() {
     };
     return labels[status as keyof typeof labels] || status;
   };
+
+  const getContractStatusBadge = (status: string) => {
+    const badges = {
+      active: 'bg-green-100 text-green-800',
+      expired: 'bg-gray-100 text-gray-800',
+    };
+    return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getContractStatusLabel = (status: string) => {
+    const labels = {
+      active: 'Aktiv',
+      expired: 'Abgelaufen',
+    };
+    return labels[status as keyof typeof labels] || status;
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Kundendetails</h1>
+            <p className="mt-1 text-sm text-gray-500">Lädt Kundendaten...</p>
+          </div>
+          <div className="bg-white shadow rounded-lg p-6">
+            <LoadingSkeleton variant="card" count={2} />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state
+  if (error || !customer) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Kundendetails</h1>
+          </div>
+          <ErrorEmptyState onRetry={() => window.location.reload()} />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -296,7 +331,7 @@ export function CustomerDetailPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
-              Tickets ({mockTickets.length})
+              Tickets ({tickets.length})
             </button>
             <button
               onClick={() => setActiveTab('contracts')}
@@ -306,7 +341,7 @@ export function CustomerDetailPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
-              Verträge ({mockContracts.length})
+              Verträge ({contracts.length})
             </button>
             <button
               onClick={() => setActiveTab('invoices')}
@@ -316,7 +351,7 @@ export function CustomerDetailPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
-              Rechnungen ({mockInvoices.length})
+              Rechnungen ({invoices.length})
             </button>
           </nav>
         </div>
@@ -395,7 +430,12 @@ export function CustomerDetailPage() {
               </button>
             </div>
             <ul className="divide-y divide-gray-200">
-              {mockTickets.map((ticket) => (
+              {tickets.length === 0 ? (
+                <li className="px-4 py-12 text-center text-sm text-gray-500">
+                  Keine Tickets vorhanden. Tickets werden im Tickets-Modul verwaltet.
+                </li>
+              ) : (
+                tickets.map((ticket) => (
                 <li key={ticket.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -415,7 +455,8 @@ export function CustomerDetailPage() {
                     </div>
                   </div>
                 </li>
-              ))}
+                ))
+              )}
             </ul>
           </div>
         )}
@@ -426,27 +467,33 @@ export function CustomerDetailPage() {
               <h3 className="text-lg font-medium text-gray-900">Verträge</h3>
             </div>
             <ul className="divide-y divide-gray-200">
-              {mockContracts.map((contract) => (
-                <li key={contract.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{contract.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {contract.startDate} bis {contract.endDate}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">{contract.monthlyValue}/Monat</p>
-                        <p className="text-xs text-gray-500">{getContractTypeLabel(contract.type)}</p>
-                      </div>
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(contract.status)}`}>
-                        {getStatusLabel(contract.status)}
-                      </span>
-                    </div>
-                  </div>
+              {contracts.length === 0 ? (
+                <li className="px-4 py-12 text-center text-sm text-gray-500">
+                  Keine Verträge vorhanden. Verträge werden im Billing-Modul verwaltet.
                 </li>
-              ))}
+              ) : (
+                contracts.map((contract) => (
+                  <li key={contract.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{contract.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {contract.startDate} bis {contract.endDate}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-gray-900">{contract.monthlyValue}/Monat</p>
+                          <p className="text-xs text-gray-500">{getContractTypeLabel(contract.type)}</p>
+                        </div>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getContractStatusBadge(contract.status)}`}>
+                          {getContractStatusLabel(contract.status)}
+                        </span>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         )}
@@ -481,7 +528,14 @@ export function CustomerDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {mockInvoices.map((invoice) => (
+                  {invoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                        Keine Rechnungen vorhanden. Rechnungen werden im Billing-Modul verwaltet.
+                      </td>
+                    </tr>
+                  ) : (
+                    invoices.map((invoice) => (
                     <tr key={invoice.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {invoice.number}
@@ -503,20 +557,13 @@ export function CustomerDetailPage() {
                         </Link>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         )}
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Die angezeigten Daten sind Platzhalterdaten (Customer ID: {customerId}).
-            In Sprint 4 wird diese Seite mit dem CRM-Backend-Modul verbunden.
-          </p>
-        </div>
       </div>
 
       {/* Delete Customer Modal */}
