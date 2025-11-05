@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { DashboardLayout } from '../../components/layout/DashboardLayout';
 
 interface FormData {
   companyName: string;
@@ -135,10 +136,10 @@ export function CreateCustomerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <DashboardLayout>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-6">
           <nav className="flex mb-2" aria-label="Breadcrumb">
             <ol className="flex items-center space-x-2 text-sm">
               <li>
@@ -152,9 +153,6 @@ export function CreateCustomerPage() {
           </nav>
           <h1 className="text-2xl font-bold text-gray-900">Neuen Kunden anlegen</h1>
         </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className="mb-6 rounded-md bg-red-50 p-4 border border-red-200">
             <div className="flex">
@@ -409,6 +407,6 @@ export function CreateCustomerPage() {
           </p>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
