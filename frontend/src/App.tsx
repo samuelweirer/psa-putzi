@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { MFASetupPage } from './pages/auth/MFASetupPage';
+import { MFAVerifyPage } from './pages/auth/MFAVerifyPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
@@ -13,6 +15,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
+          <Route path="/auth/mfa-verify" element={<MFAVerifyPage />} />
 
           {/* Protected routes */}
           <Route
@@ -20,6 +23,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/auth/mfa-setup"
+            element={
+              <ProtectedRoute>
+                <MFASetupPage />
               </ProtectedRoute>
             }
           />

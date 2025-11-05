@@ -10,6 +10,8 @@ interface AuthContextType {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  setIsAuthenticated: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Check if user is logged in on mount
   useEffect(() => {
@@ -40,10 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: data.role,
         mfaEnabled: data.mfa_enabled || false,
       });
+      setIsAuthenticated(true);
     } catch (error) {
       console.error('Failed to refresh user:', error);
       localStorage.clear();
       setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.user.role,
       mfaEnabled: data.user.mfa_enabled || false,
     });
+    setIsAuthenticated(true);
   };
 
   const register = async (registerData: RegisterRequest) => {
@@ -99,17 +105,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       localStorage.clear();
       setUser(null);
+      setIsAuthenticated(false);
     }
   };
 
   const value = {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
     login,
     register,
     logout,
     refreshUser,
+    setUser,
+    setIsAuthenticated,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
