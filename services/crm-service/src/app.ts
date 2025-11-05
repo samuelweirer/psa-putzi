@@ -6,6 +6,8 @@ import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import customerRoutes from './routes/customer.routes';
+import contactRoutes from './routes/contact.routes';
+import locationRoutes from './routes/location.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import config from './utils/config';
 import logger from './utils/logger';
@@ -49,6 +51,8 @@ export function createApp(): Express {
 
   // Routes
   app.use('/api/v1/customers', customerRoutes);
+  app.use('/api/v1/contacts', contactRoutes);
+  app.use('/api/v1/locations', locationRoutes);
 
   // 404 handler
   app.use(notFoundHandler);

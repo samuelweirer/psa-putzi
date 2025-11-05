@@ -4,6 +4,8 @@
 
 import { Router } from 'express';
 import { CustomerController } from '../controllers/customer.controller';
+import { ContactController } from '../controllers/contact.controller';
+import { LocationController } from '../controllers/location.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/error.middleware';
 import {
@@ -11,6 +13,8 @@ import {
   updateCustomerSchema,
   customerFiltersSchema,
 } from '../validators/customer.validator';
+import { createContactSchema } from '../validators/contact.validator';
+import { createLocationSchema } from '../validators/location.validator';
 
 const router = Router();
 
@@ -70,5 +74,41 @@ router.delete('/:id', CustomerController.deleteCustomer);
  * @access Private
  */
 router.get('/:id/children', CustomerController.getCustomerChildren);
+
+/**
+ * @route GET /api/v1/customers/:customerId/contacts
+ * @desc Get all contacts for a customer
+ * @access Private
+ */
+router.get('/:customerId/contacts', ContactController.listContacts);
+
+/**
+ * @route POST /api/v1/customers/:customerId/contacts
+ * @desc Create new contact for customer
+ * @access Private
+ */
+router.post(
+  '/:customerId/contacts',
+  validate(createContactSchema),
+  ContactController.createContact
+);
+
+/**
+ * @route GET /api/v1/customers/:customerId/locations
+ * @desc Get all locations for a customer
+ * @access Private
+ */
+router.get('/:customerId/locations', LocationController.listLocations);
+
+/**
+ * @route POST /api/v1/customers/:customerId/locations
+ * @desc Create new location for customer
+ * @access Private
+ */
+router.post(
+  '/:customerId/locations',
+  validate(createLocationSchema),
+  LocationController.createLocation
+);
 
 export default router;

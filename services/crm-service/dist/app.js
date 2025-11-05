@@ -11,6 +11,8 @@ const express_1 = __importDefault(require("express"));
 const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
 const customer_routes_1 = __importDefault(require("./routes/customer.routes"));
+const contact_routes_1 = __importDefault(require("./routes/contact.routes"));
+const location_routes_1 = __importDefault(require("./routes/location.routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const config_1 = __importDefault(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
@@ -47,6 +49,8 @@ function createApp() {
     });
     // Routes
     app.use('/api/v1/customers', customer_routes_1.default);
+    app.use('/api/v1/contacts', contact_routes_1.default);
+    app.use('/api/v1/locations', location_routes_1.default);
     // 404 handler
     app.use(error_middleware_1.notFoundHandler);
     // Error handler (must be last)

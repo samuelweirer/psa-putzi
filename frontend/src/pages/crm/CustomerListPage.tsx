@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { DeleteCustomerModal } from '../../components/modals/DeleteCustomerModal';
 
 interface Customer {
   id: string;
@@ -103,6 +104,8 @@ export function CustomerListPage() {
   const [contractFilter, setContractFilter] = useState<'all' | 'managed' | 'project' | 'support'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Filter and search customers
   const filteredCustomers = useMemo(() => {
@@ -135,6 +138,27 @@ export function CustomerListPage() {
   // Reset to page 1 when filters change
   const handleFilterChange = () => {
     setCurrentPage(1);
+  };
+
+  const handleDeleteClick = (customer: Customer) => {
+    setCustomerToDelete({ id: customer.id, name: customer.companyName });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async (customerId: string) => {
+    // Simulate API call for soft delete
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // In Sprint 4, this will be:
+    // await fetch(`/api/customers/${customerId}`, { method: 'DELETE' });
+    // (Soft delete: sets deleted_at timestamp in database)
+
+    // Close modal
+    setIsDeleteModalOpen(false);
+    setCustomerToDelete(null);
+
+    // In real app, this would refetch the customer list or remove from state
+    // For now, we just close the modal (customer will disappear on page refresh)
   };
 
   const getContractTypeBadge = (type: string) => {
@@ -322,6 +346,12 @@ export function CustomerListPage() {
                         >
                           Bearbeiten
                         </Link>
+                        <button
+                          onClick={() => handleDeleteClick(customer)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Löschen
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -409,6 +439,20 @@ export function CustomerListPage() {
           </p>
         </div>
       </div>
+
+      {/* Delete Customer Modal */}
+      {customerToDelete && (
+        <DeleteCustomerModal
+          isOpen={isDeleteModalOpen}
+          customerName={customerToDelete.name}
+          customerId={customerToDelete.id}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setCustomerToDelete(null);
+          }}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
     </DashboardLayout>
   );
 }
