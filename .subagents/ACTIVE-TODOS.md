@@ -80,6 +80,61 @@ Gateway hit 100% completion milestone → Senior-3 launched at 13:05 UTC!
 
 ---
 
+## 🟢 Senior-5 - Tickets Backend Agent (JUST LAUNCHED!)
+
+**Status:** 🚀 0% → Starting Week 1 Day 1
+**Mode:** Active Development
+**Last Update:** 2025-11-05 20:30 UTC
+**Launch Time:** 2025-11-05 20:30 UTC
+
+### Week 1 Todos (Core Ticket Management):
+
+#### Day 1-2: Project Setup & Ticket CRUD
+- [ ] Read launch document (`.subagents/LAUNCH-SENIOR-5-TICKETS.md`)
+- [ ] Read implementation guide (`implementation/05-MODULE-Tickets.md`)
+- [ ] Read database schema (`BDUF/BDUF-Chapter3.md` - tickets, time_entries, comments, slas)
+- [ ] **CRITICAL:** Read billing rate resolution (`BDUF/BDUF-Chapter3-Billing-Rate-Fix.md`)
+- [ ] Study CRM service code (`services/crm-service/` - your best reference!)
+- [ ] Create project structure (`services/tickets-service/`)
+- [ ] Initialize npm project (TypeScript + Express)
+- [ ] Install dependencies (pg, redis, winston, joi, vitest, amqplib, nodemailer)
+- [ ] Create TypeScript configuration
+- [ ] Create .env file (DB connection, port 3030, SMTP config)
+- [ ] Create basic Express app with health check
+- [ ] Test health endpoint: `http://10.255.20.15:3030/health`
+- [ ] Create Ticket model (CRUD operations)
+- [ ] Implement ticket number generation (TIC-0001, TIC-0002, etc.)
+- [ ] Create Ticket controller & routes
+- [ ] Copy JWT middleware from gateway
+- [ ] Test Ticket endpoints with Postman/curl
+
+#### Day 3-4: Status Workflow & SLA Tracking
+- [ ] Implement status workflow validation (see launch doc for valid transitions)
+- [ ] Create SLA calculation service
+- [ ] Implement SLA tracking (response & resolution due dates)
+- [ ] Create SLA breach detection logic
+- [ ] Add first response tracking
+- [ ] Add resolution tracking
+- [ ] Test SLA calculations with business hours logic
+- [ ] Write unit tests for SLA service (CRITICAL - complex logic)
+
+#### Day 5: Time Entries & Billing Rate Resolution
+- [ ] Create TimeEntry model with **billing rate snapshot** (CRITICAL!)
+- [ ] Implement billing rate resolution hierarchy (4-level cascade)
+- [ ] Create TimeEntry controller & routes
+- [ ] Test billing rate resolution (multiple rates per user/customer/contract)
+- [ ] Write comprehensive unit tests for billing rate resolution
+
+**Current Task:** Reading launch document and project setup
+
+**Support Available:**
+- @Senior-2 for JWT/auth patterns
+- @Senior-3 for CRM patterns (BEST REFERENCE - similar complexity!)
+- @Senior-4 for gateway integration
+- @Main-Agent for architecture decisions
+
+---
+
 ## 🟢 Senior-4 - API Gateway Agent (Support Mode)
 
 **Status:** ✅ 100% COMPLETE - PRODUCTION READY! (Completed 2025-11-05 12:58 UTC)
@@ -317,7 +372,8 @@ Gateway hit 100% completion milestone → Senior-3 launched at 13:05 UTC!
 | Senior-2 | 4 (monitoring) | ✅ Complete, standing by | P2 - Support | 97% |
 | Senior-3 | 0 (ALL COMPLETE!) | ✅ Complete, standing by | P2 - Support | 100% |
 | Senior-4 | 0 (ALL COMPLETE!) | ✅ Complete, standing by | P2 - Support | 100% |
-| Junior-5 | 8 (CRM Integration + Testing) | 🚀 Phase 3 complete! | P1 - CRM Integration | 95% |
+| Senior-5 | 15+ (Week 1 Day 1-5) | 🚀 JUST LAUNCHED! | P1 - Critical path | 0% |
+| Junior-5 | 8 (CRM Integration + Testing) | 🚀 Phase 3 complete! | P1 - Parallel work | 95% |
 
 ### Recent Accomplishments (2025-11-05 - Last 8 Hours):
 - **Junior-5:** 🎉 **PHASE 2 & 3 COMPLETE!** (95% total)
@@ -395,12 +451,13 @@ cat /opt/psa-putzi/.subagents/issues/YYYY-MM-DD-*.md
 
 ## 🎯 Current Sprint Goals
 
-**Week 3-4 Focus:** Frontend Integration + Testing (All Backend Services Complete!)
+**Week 3-4 Focus:** Tickets Backend Development + Frontend Integration (Parallel Development!)
 
 - **Senior-2:** ✅ Support mode, 97% complete, standing by
-- **Senior-3:** ✅ 100% COMPLETE! Support mode - ready to help with CRM integration
+- **Senior-3:** ✅ 100% COMPLETE! Support mode - ready to help with CRM integration & Tickets patterns
 - **Senior-4:** ✅ 100% COMPLETE! Support mode - ready to help with Gateway integration
-- **Junior-5:** 🚀 95% complete - Ready for CRM Backend Integration!
+- **Senior-5:** 🚀 JUST LAUNCHED! Starting Tickets backend development (Week 1 Day 1)
+- **Junior-5:** 🚀 95% complete - CRM Backend Integration in progress
 
 **🎉 Week 2-3 Targets: ALL EXCEEDED!**
 - ~~Gateway 40% target~~ → **100% ACHIEVED!** (2.5x over target!)
