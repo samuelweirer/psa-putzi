@@ -12,6 +12,7 @@ import { HealthResponse } from './types';
 import proxyRoutes from './routes/proxy.routes';
 import protectedRoutes from './routes/protected.routes';
 import { globalRateLimiter } from './middleware/rate-limit.middleware';
+import { circuitBreakerRegistry } from './middleware/circuit-breaker.middleware';
 
 // Load environment variables
 dotenv.config();
@@ -114,7 +115,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(globalRateLimiter);
 
 /**
- * Health check endpoint
+ * Basic health check endpoint
  */
 app.get('/health', async (_req: Request, res: Response) => {
   const uptime = process.uptime();
@@ -125,12 +126,55 @@ app.get('/health', async (_req: Request, res: Response) => {
     version: '1.0.0',
     uptime: Math.floor(uptime),
     timestamp: new Date().toISOString(),
-    dependencies: {
-      // Will be populated by checking downstream services
-    },
+    dependencies: {},
   };
 
   res.status(200).json(health);
+});
+
+/**
+ * Detailed health check endpoint with circuit breaker status
+ */
+app.get('/health/detailed', async (_req: Request, res: Response) => {
+  const uptime = process.uptime();
+  const circuitStatus = circuitBreakerRegistry.getHealthStatus();
+
+  // Determine overall health based on circuit states
+  let overallStatus = 'healthy';
+  let hasWarnings = false;
+  let hasCritical = false;
+
+  Object.values(circuitStatus).forEach((circuit: any) => {
+    if (circuit.state === 'OPEN') {
+      hasCritical = true;
+    } else if (circuit.state === 'HALF_OPEN') {
+      hasWarnings = true;
+    }
+  });
+
+  if (hasCritical) {
+    overallStatus = 'degraded';
+  } else if (hasWarnings) {
+    overallStatus = 'warning';
+  }
+
+  const health = {
+    status: overallStatus,
+    service: 'psa-api-gateway',
+    version: '1.0.0',
+    uptime: Math.floor(uptime),
+    timestamp: new Date().toISOString(),
+    circuitBreakers: circuitStatus,
+    summary: {
+      totalCircuits: Object.keys(circuitStatus).length,
+      openCircuits: Object.values(circuitStatus).filter((c: any) => c.state === 'OPEN').length,
+      halfOpenCircuits: Object.values(circuitStatus).filter((c: any) => c.state === 'HALF_OPEN').length,
+      closedCircuits: Object.values(circuitStatus).filter((c: any) => c.state === 'CLOSED').length,
+    },
+  };
+
+  const statusCode = hasCritical ? 503 : hasWarnings ? 200 : 200;
+  res.status(statusCode).json(health);
 });
 
 /**

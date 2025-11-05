@@ -8,11 +8,12 @@ import { serviceRegistry } from '../config/services';
 import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
 import { authRateLimiter, userRateLimiter } from '../middleware/rate-limit.middleware';
+import { circuitBreakerRegistry } from '../middleware/circuit-breaker.middleware';
 
 const router = Router();
 
 /**
- * Create proxy middleware with common configuration
+ * Create proxy middleware with common configuration and circuit breaker integration
  */
 function createServiceProxy(serviceName: string): any {
   const service = serviceRegistry[serviceName];
@@ -21,11 +22,29 @@ function createServiceProxy(serviceName: string): any {
     throw new Error(`Service ${serviceName} not found in registry`);
   }
 
+  // Get circuit breaker for this service
+  const circuitBreaker = circuitBreakerRegistry.getBreaker(serviceName, {
+    failureThreshold: 5,      // Open circuit after 5 failures
+    successThreshold: 2,      // Close circuit after 2 successes in HALF_OPEN
+    timeout: 30000,           // Wait 30 seconds before trying again
+    monitoringPeriod: 60000,  // Monitor failures over 60 seconds
+  });
+
   const proxyOptions: Options = {
     target: service.url,
     changeOrigin: true,
     timeout: service.timeout,
     proxyTimeout: service.timeout,
+
+    // Check circuit breaker before proxying
+    router: (_req) => {
+      // Check if circuit allows requests
+      if (!circuitBreaker.canRequest()) {
+        // Return undefined to skip proxy (will be handled by middleware)
+        return undefined as any;
+      }
+      return service.url;
+    },
 
     // Add custom headers to forwarded requests
     onProxyReq: (proxyReq, req: any) => {
@@ -59,17 +78,33 @@ function createServiceProxy(serviceName: string): any {
         requestId: authReq.id,
         service: service.name,
         target: service.url,
+        circuitState: circuitBreaker.getState(),
       });
     },
 
     // Handle proxy responses
     onProxyRes: (proxyRes, req: any, _res) => {
       const authReq = req as AuthenticatedRequest;
+      const statusCode = proxyRes.statusCode || 0;
+
+      // Record success or failure in circuit breaker
+      if (statusCode >= 500) {
+        circuitBreaker.recordFailure();
+        logger.warn(`Circuit breaker recorded failure for ${service.name}`, {
+          requestId: authReq.id,
+          service: service.name,
+          statusCode,
+          circuitState: circuitBreaker.getState(),
+        });
+      } else {
+        circuitBreaker.recordSuccess();
+      }
 
       logger.debug(`Received response from ${service.name}`, {
         requestId: authReq.id,
         service: service.name,
-        statusCode: proxyRes.statusCode,
+        statusCode,
+        circuitState: circuitBreaker.getState(),
       });
     },
 
@@ -77,23 +112,46 @@ function createServiceProxy(serviceName: string): any {
     onError: (err, req: any, res: any) => {
       const authReq = req as AuthenticatedRequest;
 
+      // Record failure in circuit breaker
+      circuitBreaker.recordFailure();
+
       logger.error(`Proxy error for ${service.name}`, {
         error: err.message,
         requestId: authReq.id,
         service: service.name,
         url: req.url,
+        circuitState: circuitBreaker.getState(),
       });
 
       if (!res.headersSent) {
-        res.status(502).json({
-          error: {
-            code: 'BAD_GATEWAY',
-            message: `Service ${service.name} is unavailable`,
-            status: 502,
-            timestamp: new Date().toISOString(),
-            request_id: authReq.id,
-          },
-        });
+        // Check circuit state to provide appropriate error message
+        const circuitState = circuitBreaker.getState();
+        const stats = circuitBreaker.getStats();
+
+        if (circuitState === 'OPEN') {
+          res.status(503).json({
+            error: {
+              code: 'SERVICE_UNAVAILABLE',
+              message: `Service ${service.name} is temporarily unavailable due to repeated failures`,
+              status: 503,
+              timestamp: new Date().toISOString(),
+              request_id: authReq.id,
+              retryAfter: stats.nextAttempt
+                ? Math.ceil((stats.nextAttempt - Date.now()) / 1000)
+                : 30,
+            },
+          });
+        } else {
+          res.status(502).json({
+            error: {
+              code: 'BAD_GATEWAY',
+              message: `Service ${service.name} is unavailable`,
+              status: 502,
+              timestamp: new Date().toISOString(),
+              request_id: authReq.id,
+            },
+          });
+        }
       }
     },
   };

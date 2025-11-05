@@ -164,8 +164,8 @@ export const globalRateLimiter: RateLimitRequestHandler = rateLimit({
   keyGenerator: ipKeyGenerator,
   handler: rateLimitHandler,
   skip: (req) => {
-    // Skip rate limiting for health check endpoint
-    return req.path === '/health' || req.path === '/api/v1/health';
+    // Skip rate limiting for health check endpoints
+    return req.path === '/health' || req.path === '/health/detailed' || req.path === '/api/v1/health';
   },
 });
 
