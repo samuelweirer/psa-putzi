@@ -1,13 +1,9 @@
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { DashboardLayout } from '../components/layout/DashboardLayout';
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = '/login';
-  };
+  const { user } = useAuth();
 
   // Mock data - will be replaced with real API calls in Sprint 4-6
   const stats = {
@@ -27,31 +23,8 @@ export function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-xl font-bold text-blue-600">PUTZI</h1>
-              <span className="text-xs text-gray-500 italic hidden sm:inline">„Saubere Prozesse"</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {user?.firstName} {user?.lastName}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <DashboardLayout>
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Welcome Header */}
           <div className="mb-8">
@@ -335,7 +308,6 @@ export function DashboardPage() {
             </p>
           </div>
         </div>
-      </main>
-    </div>
+      </DashboardLayout>
   );
 }
