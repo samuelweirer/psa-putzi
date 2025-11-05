@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { api } from '../../lib/api';
 
 interface FormData {
   companyName: string;
@@ -87,11 +88,8 @@ export function CreateCustomerPage() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API call in Sprint 4
-      // await api.post('/customers', formData);
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Create customer via API
+      await api.post('/customers', formData);
 
       setSuccess(true);
 
@@ -100,6 +98,7 @@ export function CreateCustomerPage() {
         navigate('/customers');
       }, 2000);
     } catch (err: any) {
+      console.error('Failed to create customer:', err);
       setError(err.response?.data?.message || 'Fehler beim Erstellen des Kunden. Bitte versuchen Sie es erneut.');
     } finally {
       setIsLoading(false);
@@ -398,14 +397,6 @@ export function CreateCustomerPage() {
             </button>
           </div>
         </form>
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Diese Seite simuliert die Kundenerstellung.
-            In Sprint 4 wird sie mit dem CRM-Backend-Modul verbunden.
-          </p>
-        </div>
       </div>
     </DashboardLayout>
   );

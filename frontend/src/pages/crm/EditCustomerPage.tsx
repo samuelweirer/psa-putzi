@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { api } from '../../lib/api';
 
 interface FormData {
   companyName: string;
@@ -17,23 +18,6 @@ interface FormData {
   status: 'active' | 'inactive';
   notes: string;
 }
-
-// Mock data - will be replaced with API call in Sprint 4
-const mockCustomer: FormData = {
-  companyName: 'ABC GmbH',
-  contactPerson: 'Max Mustermann',
-  email: 'max@abc-gmbh.de',
-  phone: '+49 30 12345678',
-  address: 'Musterstraße 123',
-  city: 'Berlin',
-  postalCode: '10115',
-  country: 'Deutschland',
-  website: 'https://www.abc-gmbh.de',
-  taxId: 'DE123456789',
-  contractType: 'managed',
-  status: 'active',
-  notes: 'Wichtiger Kunde seit 2020',
-};
 
 export function EditCustomerPage() {
   const { customerId } = useParams<{ customerId: string }>();
@@ -59,19 +43,40 @@ export function EditCustomerPage() {
     notes: '',
   });
 
-  // Load customer data (mock implementation)
+  // Load customer data from API
   useEffect(() => {
     const loadCustomerData = async () => {
+      if (!customerId) return;
+
       try {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        setError('');
 
-        // In Sprint 4, this will be: const response = await fetch(`/api/customers/${customerId}`);
-        setFormData(mockCustomer);
+        // Fetch customer data from API
+        const response = await api.get(`/customers/${customerId}`);
+        const customerData = response.data.data || response.data;
+
+        // Map API response to form data
+        setFormData({
+          companyName: customerData.companyName || '',
+          contactPerson: customerData.contactPerson || '',
+          email: customerData.email || '',
+          phone: customerData.phone || '',
+          address: customerData.address || '',
+          city: customerData.city || '',
+          postalCode: customerData.postalCode || '',
+          country: customerData.country || 'Deutschland',
+          website: customerData.website || '',
+          taxId: customerData.taxId || '',
+          contractType: customerData.contractType || 'managed',
+          status: customerData.status === 'active' || customerData.status === 'inactive' ? customerData.status : 'active',
+          notes: customerData.notes || '',
+        });
+
         setIsLoading(false);
-      } catch (err) {
-        setError('Fehler beim Laden der Kundendaten.');
+      } catch (err: any) {
+        console.error('Failed to load customer data:', err);
+        setError(err.response?.data?.message || 'Fehler beim Laden der Kundendaten.');
         setIsLoading(false);
       }
     };
@@ -117,15 +122,8 @@ export function EditCustomerPage() {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // In Sprint 4, this will be:
-      // const response = await fetch(`/api/customers/${customerId}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // });
+      // Update customer via API
+      await api.put(`/customers/${customerId}`, formData);
 
       setSuccess(true);
 
@@ -133,8 +131,9 @@ export function EditCustomerPage() {
       setTimeout(() => {
         navigate(`/customers/${customerId}`);
       }, 1500);
-    } catch (err) {
-      setError('Fehler beim Speichern der Änderungen. Bitte versuchen Sie es erneut.');
+    } catch (err: any) {
+      console.error('Failed to update customer:', err);
+      setError(err.response?.data?.message || 'Fehler beim Speichern der Änderungen. Bitte versuchen Sie es erneut.');
       setIsSaving(false);
     }
   };
@@ -461,14 +460,6 @@ export function EditCustomerPage() {
             </button>
           </div>
         </form>
-
-        {/* Development Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            <strong>Entwicklungsmodus:</strong> Diese Seite simuliert die Kundenbearbeitung (Customer ID: {customerId}).
-            In Sprint 4 wird sie mit dem CRM-Backend-Modul verbunden.
-          </p>
-        </div>
       </div>
     </DashboardLayout>
   );
