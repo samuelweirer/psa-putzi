@@ -1,0 +1,74 @@
+# Stress Test
+# Tests API Gateway maximum capacity and breaking point
+#
+# Duration: 5 minutes
+# Peak: 200 requests/second
+# Purpose: Find the breaking point and stress limits
+#
+# Run with: npm run loadtest:stress
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Ramp up gradually
+    - duration: 60
+      arrivalRate: 20
+      rampTo: 50
+      name: "Ramp up to 50 RPS"
+
+    - duration: 60
+      arrivalRate: 50
+      rampTo: 100
+      name: "Ramp up to 100 RPS"
+
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 150
+      name: "Ramp up to 150 RPS"
+
+    - duration: 60
+      arrivalRate: 150
+      rampTo: 200
+      name: "Ramp up to 200 RPS"
+
+    # Hold at peak
+    - duration: 60
+      arrivalRate: 200
+      name: "Sustained peak (200 RPS)"
+
+  # Stress test allows higher error rates
+  ensure:
+    maxErrorRate: 10 # Max 10% error rate
+    p95: 1000 # 95th percentile < 1s
+    p99: 5000 # 99th percentile < 5s
+
+  http:
+    timeout: 20
+
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+
+scenarios:
+  - name: "Health endpoint stress"
+    weight: 50
+    flow:
+      - get:
+          url: "/health"
+
+  - name: "Mixed traffic stress"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/health/detailed"
+
+  - name: "API calls (expected failures)"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/v1/protected/profile"
+      - get:
+          url: "/api/v1/protected/admin"

@@ -1,0 +1,73 @@
+# Spike Test
+# Tests API Gateway behavior under sudden traffic spikes
+#
+# Duration: 3 minutes
+# Peak: 100 requests/second
+#
+# Run with: npm run loadtest:spike
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Start with normal load
+    - duration: 30
+      arrivalRate: 10
+      name: "Normal traffic"
+
+    # Sudden spike
+    - duration: 30
+      arrivalRate: 100
+      name: "Traffic spike (10x)"
+
+    # Back to normal
+    - duration: 30
+      arrivalRate: 10
+      name: "Recovery"
+
+    # Another spike
+    - duration: 30
+      arrivalRate: 80
+      name: "Second spike"
+
+    # Cool down
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down"
+
+  # More lenient thresholds for spike test
+  ensure:
+    maxErrorRate: 5 # Max 5% error rate during spikes
+    p95: 500 # 95th percentile < 500ms
+    p99: 2000 # 99th percentile < 2s
+
+  http:
+    timeout: 15
+
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+
+scenarios:
+  - name: "Quick health check"
+    weight: 40
+    flow:
+      - get:
+          url: "/health"
+
+  - name: "Root endpoint"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+
+  - name: "Protected endpoints (401s)"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/v1/protected/profile"
+
+  - name: "404 errors"
+    weight: 10
+    flow:
+      - get:
+          url: "/random-{{ $randomNumber() }}"

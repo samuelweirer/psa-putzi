@@ -1,0 +1,114 @@
+# Basic Load Test
+# Tests normal API Gateway traffic patterns
+#
+# Duration: 2 minutes
+# Users: 10 virtual users
+# Requests per second: ~10-20 RPS
+#
+# Run with: npm run loadtest:basic
+
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 10
+      name: "Sustained load"
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down"
+
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 1 # Max 1% error rate
+    p95: 200 # 95th percentile response time < 200ms
+    p99: 500 # 99th percentile response time < 500ms
+
+  # HTTP settings
+  http:
+    timeout: 10
+
+  # Plugins
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+
+  # Metrics output
+  processor: "./load-test-processor.js"
+
+scenarios:
+  - name: "Health check"
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: status
+
+  - name: "Detailed health check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health/detailed"
+          expect:
+            - statusCode: 200
+            - hasProperty: circuitBreakers
+
+  - name: "Root endpoint"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+            - hasProperty: service
+
+  - name: "API docs access"
+    weight: 5
+    flow:
+      - get:
+          url: "/api-docs"
+          expect:
+            - statusCode: [200, 301, 302]
+
+  - name: "OpenAPI spec"
+    weight: 5
+    flow:
+      - get:
+          url: "/api-docs.json"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+  - name: "Protected route without auth"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/v1/protected/profile"
+          expect:
+            - statusCode: 401
+
+  - name: "Non-existent route (404)"
+    weight: 10
+    flow:
+      - get:
+          url: "/nonexistent-route"
+          expect:
+            - statusCode: 404
+            - hasProperty: error
+
+  - name: "Mixed endpoint access"
+    weight: 5
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/health"
+      - get:
+          url: "/api/v1/protected/admin"
+          expect:
+            - statusCode: 401
