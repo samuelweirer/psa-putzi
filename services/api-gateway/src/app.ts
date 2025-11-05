@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { HealthResponse } from './types';
 import proxyRoutes from './routes/proxy.routes';
+import protectedRoutes from './routes/protected.routes';
 
 // Load environment variables
 dotenv.config();
@@ -136,6 +137,11 @@ app.get('/', (_req: Request, res: Response) => {
     documentation: '/api-docs',
   });
 });
+
+/**
+ * Example protected routes (for testing authentication)
+ */
+app.use('/api/v1', protectedRoutes);
 
 /**
  * Proxy routes to microservices
