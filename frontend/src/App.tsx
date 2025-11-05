@@ -15,6 +15,7 @@ import { ContactListPage } from './pages/crm/contacts/ContactListPage';
 import { CreateContactPage } from './pages/crm/contacts/CreateContactPage';
 import { LocationListPage } from './pages/crm/locations/LocationListPage';
 import { CreateLocationPage } from './pages/crm/locations/CreateLocationPage';
+import { TicketListPage } from './pages/tickets/TicketListPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 function App() {
@@ -107,6 +108,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CustomerDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets"
+            element={
+              <ProtectedRoute>
+                <TicketListPage />
               </ProtectedRoute>
             }
           />
