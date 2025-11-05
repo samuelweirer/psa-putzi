@@ -31,7 +31,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     try {
       const { data } = await api.get('/auth/me');
-      setUser(data);
+      // Convert snake_case to camelCase for frontend
+      setUser({
+        id: data.id,
+        email: data.email,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        role: data.role,
+        mfaEnabled: data.mfa_enabled || false,
+      });
     } catch (error) {
       console.error('Failed to refresh user:', error);
       localStorage.clear();
@@ -45,43 +53,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await api.post('/auth/login', { email, password });
 
     // Handle MFA required case
-    if (data.mfaRequired) {
+    if (data.mfa_required) {
       // Store temp token for MFA verification
-      localStorage.setItem('mfaTempToken', data.tempToken);
+      localStorage.setItem('mfaTempToken', data.temp_token);
       throw new Error('MFA_REQUIRED');
     }
 
-    // Store tokens
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    // Store tokens (backend uses snake_case)
+    localStorage.setItem('accessToken', data.access_token);
+    localStorage.setItem('refreshToken', data.refresh_token);
 
-    // Set user state
+    // Set user state (convert snake_case to camelCase for frontend)
     setUser({
-      id: data.id,
-      email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      role: data.role,
-      mfaEnabled: data.mfaEnabled,
+      id: data.user.id,
+      email: data.user.email,
+      firstName: data.user.first_name,
+      lastName: data.user.last_name,
+      role: data.user.role,
+      mfaEnabled: data.user.mfa_enabled || false,
     });
   };
 
   const register = async (registerData: RegisterRequest) => {
-    const { data } = await api.post('/auth/register', registerData);
+    // Transform camelCase to snake_case for backend
+    const backendData = {
+      email: registerData.email,
+      password: registerData.password,
+      first_name: registerData.firstName,
+      last_name: registerData.lastName,
+    };
 
-    // Store tokens
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    // Register the user
+    await api.post('/auth/register', backendData);
 
-    // Set user state
-    setUser({
-      id: data.id,
-      email: data.email,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      role: 'user',
-      mfaEnabled: false,
-    });
+    // Backend doesn't return tokens on registration (doesn't match spec)
+    // Workaround: Automatically login after successful registration
+    await login(registerData.email, registerData.password);
   };
 
   const logout = async () => {
