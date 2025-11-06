@@ -8,6 +8,8 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './utils/swagger';
 import ticketRoutes from './routes/ticket.routes';
+import timeEntryRoutes from './routes/time-entry.routes';
+import ticketTimeEntryRoutes from './routes/ticket-time-entry.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import config from './utils/config';
 import logger from './utils/logger';
@@ -57,6 +59,10 @@ export function createApp(): Express {
 
   // Routes
   app.use('/api/v1/tickets', ticketRoutes);
+  app.use('/api/v1/time-entries', timeEntryRoutes);
+
+  // Nested routes (tickets/:ticketId/time-entries)
+  app.use('/api/v1/tickets/:ticketId/time-entries', ticketTimeEntryRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
