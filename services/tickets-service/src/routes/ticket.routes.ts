@@ -4,6 +4,7 @@
 
 import { Router } from 'express';
 import { TicketController } from '../controllers/ticket.controller';
+import { CommentController } from '../controllers/comment.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/error.middleware';
 import {
@@ -32,6 +33,13 @@ router.get('/statistics', TicketController.getStatistics);
  * @access Private
  */
 router.get('/my-tickets', TicketController.getMyTickets);
+
+/**
+ * @route GET /api/v1/tickets/:id/activity
+ * @desc Get activity timeline for a ticket
+ * @access Private
+ */
+router.get('/:id/activity', CommentController.getTicketActivity);
 
 /**
  * @route GET /api/v1/tickets

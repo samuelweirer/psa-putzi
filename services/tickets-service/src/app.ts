@@ -10,6 +10,8 @@ import { swaggerSpec } from './utils/swagger';
 import ticketRoutes from './routes/ticket.routes';
 import timeEntryRoutes from './routes/time-entry.routes';
 import ticketTimeEntryRoutes from './routes/ticket-time-entry.routes';
+import commentRoutes from './routes/comment.routes';
+import ticketCommentRoutes from './routes/ticket-comment.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import config from './utils/config';
 import logger from './utils/logger';
@@ -60,9 +62,11 @@ export function createApp(): Express {
   // Routes
   app.use('/api/v1/tickets', ticketRoutes);
   app.use('/api/v1/time-entries', timeEntryRoutes);
+  app.use('/api/v1/comments', commentRoutes);
 
-  // Nested routes (tickets/:ticketId/time-entries)
+  // Nested routes
   app.use('/api/v1/tickets/:ticketId/time-entries', ticketTimeEntryRoutes);
+  app.use('/api/v1/tickets/:ticketId/comments', ticketCommentRoutes);
 
   // 404 handler
   app.use(notFoundHandler);
