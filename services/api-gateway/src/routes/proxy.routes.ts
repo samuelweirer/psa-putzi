@@ -174,12 +174,19 @@ router.use('/api/v1/auth', authRateLimiter, createServiceProxy('auth'));
 router.use('/api/v1/users', userRateLimiter, createServiceProxy('auth'));
 
 /**
+ * Route: Tickets Service
+ * All /api/v1/tickets/*, /api/v1/time-entries/*, /api/v1/comments/* requests go to tickets service
+ */
+router.use('/api/v1/tickets', createServiceProxy('tickets'));
+router.use('/api/v1/time-entries', createServiceProxy('tickets'));
+router.use('/api/v1/comments', createServiceProxy('tickets'));
+
+/**
  * Future routes - commented out until services are ready
  */
 
 // router.use('/api/v1/customers', createServiceProxy('crm'));
 // router.use('/api/v1/contacts', createServiceProxy('crm'));
-// router.use('/api/v1/tickets', createServiceProxy('tickets'));
 // router.use('/api/v1/billing', createServiceProxy('billing'));
 // router.use('/api/v1/projects', createServiceProxy('projects'));
 // router.use('/api/v1/assets', createServiceProxy('assets'));

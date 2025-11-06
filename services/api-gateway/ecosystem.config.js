@@ -33,10 +33,12 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: 3000,
+        REDIS_PASSWORD: 'uRUl9UDmXMnV0CkqWxvEW8z5Dp6rDV7C',
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
+        REDIS_PASSWORD: 'uRUl9UDmXMnV0CkqWxvEW8z5Dp6rDV7C',
       },
 
       // Logging
@@ -49,7 +51,7 @@ module.exports = {
       // Process management
       listen_timeout: 3000, // Wait 3 seconds for app to listen
       kill_timeout: 5000, // Wait 5 seconds before killing process
-      wait_ready: true, // Wait for app to emit 'ready' event
+      wait_ready: false, // Don't wait for app to emit 'ready' event
 
       // Restart on file changes (development only)
       watch: false,

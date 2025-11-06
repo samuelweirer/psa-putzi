@@ -5,7 +5,7 @@
 import http from 'http';
 import app from './app';
 import { logger } from './utils/logger';
-import { redisClient } from './config/redis';
+import { redisClient } from './middleware/rate-limit.middleware';
 
 const PORT = process.env.PORT || 3000;
 const SERVICE_NAME = process.env.SERVICE_NAME || 'psa-api-gateway';
