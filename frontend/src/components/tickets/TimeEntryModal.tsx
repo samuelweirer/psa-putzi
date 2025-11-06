@@ -1,17 +1,17 @@
 import { useState, FormEvent } from 'react';
 
-interface TimeEntryModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (entry: TimeEntryFormData) => void;
-  ticketId: string;
-}
-
 export interface TimeEntryFormData {
   description: string;
   hours: number;
   date: string;
   billable: boolean;
+}
+
+interface TimeEntryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (entry: TimeEntryFormData) => void;
+  ticketId: string;
 }
 
 export function TimeEntryModal({ isOpen, onClose, onSubmit, ticketId }: TimeEntryModalProps) {
