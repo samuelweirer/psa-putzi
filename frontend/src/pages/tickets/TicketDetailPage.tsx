@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { TimeEntryModal, TimeEntryFormData } from '../../components/tickets/TimeEntryModal';
+import { TimeEntryModal } from '../../components/tickets/TimeEntryModal';
+import type { TimeEntryFormData } from '../../components/tickets/TimeEntryModal';
 import { TicketAttachments } from '../../components/tickets/TicketAttachments';
 import { AssignmentWorkflow } from '../../components/tickets/AssignmentWorkflow';
 
