@@ -308,6 +308,7 @@ export function DashboardPage() {
             </p>
           </div>
         </div>
-      </DashboardLayout>
+      </div>
+    </DashboardLayout>
   );
 }
