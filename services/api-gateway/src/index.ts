@@ -5,7 +5,7 @@
 import http from 'http';
 import app from './app';
 import { logger } from './utils/logger';
-import { redisClient } from './middleware/rate-limit.middleware';
+import { initializeRedis, getRedisClient } from './middleware/rate-limit.middleware';
 
 const PORT = process.env.PORT || 3000;
 const SERVICE_NAME = process.env.SERVICE_NAME || 'psa-api-gateway';
@@ -55,9 +55,12 @@ async function gracefulShutdown(signal: string): Promise<void> {
     });
 
     // 2. Close Redis connection
-    logger.info('Closing Redis connection');
-    await redisClient.quit();
-    logger.info('Redis connection closed successfully');
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      logger.info('Closing Redis connection');
+      await redisClient.quit();
+      logger.info('Redis connection closed successfully');
+    }
 
     // 3. Additional cleanup (RabbitMQ, database pools, etc.) would go here
     // For now, we only have Redis
@@ -79,15 +82,23 @@ async function gracefulShutdown(signal: string): Promise<void> {
  */
 async function startServer() {
   try {
+    // Initialize Redis connection (after dotenv has loaded via app import)
+    await initializeRedis();
+
     // Verify Redis connection before starting
-    try {
-      await redisClient.ping();
-      logger.info('Redis connection verified');
-    } catch (error) {
-      logger.error('Failed to connect to Redis', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      process.exit(1);
+    const redisClient = getRedisClient();
+    if (redisClient) {
+      try {
+        await redisClient.ping();
+        logger.info('Redis connection verified');
+      } catch (error) {
+        logger.error('Failed to verify Redis connection', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        logger.warn('Gateway will start without Redis (rate limiting will use memory store)');
+      }
+    } else {
+      logger.warn('Redis client not initialized, rate limiting will use memory store');
     }
 
     // Start HTTP server

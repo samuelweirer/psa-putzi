@@ -5,34 +5,50 @@
  */
 
 import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
-import { createClient } from 'redis';
+import { createClient, RedisClientType } from 'redis';
 import { Request } from 'express';
 import { AuthenticatedRequest } from '../types';
 import { logger } from '../utils/logger';
 
-// Create Redis client for rate limiting
-const redisClient = createClient({
-  socket: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  },
-  password: process.env.REDIS_PASSWORD || undefined,
-});
-
-// Connect to Redis
-redisClient.on('error', (err: Error) => {
-  logger.error('Redis rate limit client error', { error: err.message });
-});
-
-redisClient.on('connect', () => {
-  logger.info('Redis rate limit client connected');
-});
-
+// Redis client for rate limiting (initialized lazily)
+let redisClient: RedisClientType | null = null;
 let redisConnected = false;
 
-// Initialize Redis connection
-(async () => {
+/**
+ * Initialize Redis connection for rate limiting
+ * Must be called after environment variables are loaded
+ */
+export async function initializeRedis(): Promise<void> {
+  if (redisClient) {
+    logger.info('Redis client already initialized');
+    return;
+  }
+
   try {
+    logger.info('Initializing Redis client for rate limiting', {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: process.env.REDIS_PORT || '6379',
+      hasPassword: !!process.env.REDIS_PASSWORD,
+    });
+
+    redisClient = createClient({
+      socket: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      },
+      password: process.env.REDIS_PASSWORD || undefined,
+    }) as RedisClientType;
+
+    // Set up event handlers
+    redisClient.on('error', (err: Error) => {
+      logger.error('Redis rate limit client error', { error: err.message });
+    });
+
+    redisClient.on('connect', () => {
+      logger.info('Redis rate limit client connected');
+    });
+
+    // Connect to Redis
     await redisClient.connect();
     redisConnected = true;
     logger.info('Redis connected for rate limiting');
@@ -41,8 +57,10 @@ let redisConnected = false;
       error: error instanceof Error ? error.message : String(error),
     });
     logger.warn('Rate limiting will use memory store (not distributed)');
+    redisClient = null;
+    redisConnected = false;
   }
-})();
+}
 
 /**
  * Simple Redis-backed store implementation for express-rate-limit
@@ -56,7 +74,7 @@ class RedisRateLimitStore {
   }
 
   async increment(key: string): Promise<{ totalHits: number; resetTime: Date | undefined }> {
-    if (!redisConnected) {
+    if (!redisConnected || !redisClient) {
       // Fallback to allowing request if Redis is down
       return { totalHits: 1, resetTime: undefined };
     }
@@ -83,7 +101,7 @@ class RedisRateLimitStore {
   }
 
   async decrement(key: string): Promise<void> {
-    if (!redisConnected) return;
+    if (!redisConnected || !redisClient) return;
 
     const redisKey = `${this.prefix}${key}`;
     try {
@@ -94,7 +112,7 @@ class RedisRateLimitStore {
   }
 
   async resetKey(key: string): Promise<void> {
-    if (!redisConnected) return;
+    if (!redisConnected || !redisClient) return;
 
     const redisKey = `${this.prefix}${key}`;
     try {
@@ -259,6 +277,9 @@ export function createRateLimiter(options: {
 }
 
 /**
- * Export Redis client for testing and health checks
+ * Get Redis client (for testing and health checks)
+ * Returns null if not initialized
  */
-export { redisClient };
+export function getRedisClient(): RedisClientType | null {
+  return redisClient;
+}
