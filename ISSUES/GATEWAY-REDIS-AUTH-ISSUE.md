@@ -3,10 +3,12 @@
 **Issue ID:** GATEWAY-REDIS-001
 **Created:** 2025-11-06
 **Reporter:** Senior-5 (Tickets Agent)
+**Resolved:** 2025-11-06 (Senior-4 - Gateway Expert)
 **Priority:** P2 (Medium - workaround exists)
-**Status:** 🔴 OPEN
+**Status:** ✅ RESOLVED
 **Component:** API Gateway
 **Affected Version:** 1.0.0
+**Fixed Version:** 1.0.1
 
 ---
 
@@ -33,13 +35,15 @@ API Gateway fails to start with PM2 due to Redis authentication error, even thou
 }
 ```
 
-## Current Status
+## Resolution Status
 
-- ✅ Tickets service proxy routes configured in code
-- ✅ Redis password set in `ecosystem.config.js` env variables
-- ✅ Redis password set in `.env` file
-- ✅ Redis import path fixed in `index.ts`
-- ⚠️ Gateway crashes on startup (restart loop)
+- ✅ Implemented lazy Redis initialization
+- ✅ Redis connects after environment variables loaded
+- ✅ Gateway starts successfully on port 3000
+- ✅ Health endpoints responding (200 OK)
+- ✅ Circuit breakers operational
+- ✅ Proxy routes working (tickets, auth)
+- ✅ Graceful degradation if Redis unavailable
 
 ## Root Cause (Suspected)
 
@@ -225,7 +229,7 @@ curl http://localhost:3000/health/detailed
 
 - ✅ Auth service (port 3001) - Uses same Redis, works fine
 - ✅ Tickets service (port 3003) - Operational, ready for gateway integration
-- ⚠️ Gateway (port 3000) - Not operational (this issue)
+- ✅ Gateway (port 3000) - **NOW OPERATIONAL** (issue resolved)
 
 ## Progress Notes
 
@@ -235,6 +239,41 @@ curl http://localhost:3000/health/detailed
 - Proposed 4 solution options
 - Created workaround documentation
 
+### 2025-11-06 10:47 UTC - Issue Resolved ✅
+**Assigned to:** Senior-4 (Gateway Expert)
+**Solution:** Option A - Lazy Redis Initialization (RECOMMENDED)
+**Time to Fix:** ~45 minutes
+
+**Implementation:**
+1. Refactored `rate-limit.middleware.ts`:
+   - Removed IIFE that connected at module load time
+   - Created `initializeRedis()` function for lazy initialization
+   - Made `redisClient` nullable with `getRedisClient()` getter
+   - Updated all store methods to check for null client
+
+2. Updated `index.ts`:
+   - Import `initializeRedis()` and `getRedisClient()`
+   - Call `initializeRedis()` after app loads (dotenv loaded)
+   - Use `getRedisClient()` for health checks and shutdown
+
+**Test Results:**
+```bash
+# Gateway started successfully with Redis authentication
+✅ Gateway running on port 3000 (2 instances, cluster mode)
+✅ Redis connected with authentication (hasPassword:true)
+✅ Health endpoints: HTTP 200
+✅ Circuit breakers: Operational
+✅ Proxy routes: Working (tickets, auth)
+✅ Graceful degradation: Yes (continues without Redis if unavailable)
+```
+
+**Files Modified:**
+- `services/api-gateway/src/middleware/rate-limit.middleware.ts` (70 lines changed)
+- `services/api-gateway/src/index.ts` (8 lines changed)
+
+**Commit:** `335d562` - fix(gateway): Implement lazy Redis initialization
+**Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG`
+
 ---
 
-**Next Action:** Assign to Senior-4 or Senior-2 for investigation and fix.
+**Issue Status:** ✅ RESOLVED - Gateway operational on port 3000
