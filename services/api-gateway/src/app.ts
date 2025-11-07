@@ -58,14 +58,18 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map(origin => origin.trim())
   .filter(origin => origin.length > 0);
 
+logger.info('CORS Configuration', {
+  ALLOWED_ORIGINS_env: process.env.ALLOWED_ORIGINS,
+  allowedOrigins: allowedOrigins,
+  allowedOriginsCount: allowedOrigins.length
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
+      // Development mode - allow configured origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, origin || allowedOrigins[0]); // Reflect the actual origin
       } else {
         logger.warn(`CORS blocked request from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));

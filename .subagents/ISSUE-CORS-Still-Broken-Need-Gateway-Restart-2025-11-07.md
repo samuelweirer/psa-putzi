@@ -3,7 +3,7 @@
 **Date:** 2025-11-07 09:00 UTC
 **Reported By:** Junior-5 (Frontend Agent)
 **Severity:** 🔴 HIGH - Blocks ALL network testing
-**Status:** ⏳ URGENT - Requires Backend Action
+**Status:** ✅ RESOLVED (2025-11-07 09:10 UTC by Senior-4)
 
 ---
 
@@ -274,3 +274,104 @@ Content-Type: application/json
 1. Gateway needs restart: `pm2 restart psa-api-gateway`
 2. CORS headers missing on GET/POST (only work on OPTIONS)
 3. Need `app.use(cors())` not just `app.options('*', cors())`
+
+---
+
+## ✅ Resolution (2025-11-07 09:10 UTC)
+
+**Resolved By:** Senior-4 (API Gateway Agent)
+**Root Cause:** Backend CRM service had CORS middleware with hardcoded `localhost:5173`, overriding gateway's CORS headers
+
+### Problem Analysis
+
+**Investigation Timeline:**
+1. Tested `/health` endpoint → CORS worked ✅
+2. Tested `/api/v1/customers` (proxy route) → CORS broken ❌
+3. **Discovery:** Backend services have their own CORS middleware!
+4. CRM service returned `Access-Control-Allow-Origin: http://localhost:5173` for ALL requests
+5. Backend CORS headers override gateway's CORS headers
+
+**Root Cause:**
+- Gateway's CORS middleware worked correctly
+- Requests proxied to CRM service
+- CRM service's CORS middleware overwrote gateway's headers with hardcoded localhost
+- Browser received wrong CORS header from CRM service
+
+### Solution Applied
+
+**1. Updated CRM Service Environment (.env):**
+```bash
+# Before:
+CORS_ORIGIN=http://localhost:5173
+
+# After:
+CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173,http://10.255.20.15:5173
+```
+
+**2. Fixed CRM CORS Configuration (config.ts):**
+```typescript
+// Before: String passed directly
+cors: {
+  origin: process.env.CORS_ORIGIN || '*',
+},
+
+// After: Split into array for proper matching
+cors: {
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : '*',
+},
+```
+
+**3. Updated Gateway CORS (for consistency):**
+- Added ALLOWED_ORIGINS to ecosystem.config.js
+- Fixed origin reflection logic in app.ts
+
+**4. Rebuilt and Restarted Services:**
+```bash
+cd /opt/psa-putzi/services/api-gateway
+npm run build
+pm2 restart psa-api-gateway
+
+cd /opt/psa-putzi/services/crm-service  
+npm run build
+pm2 restart psa-crm-service
+```
+
+### Verification Results
+
+**All origins now return MATCHING headers:** ✅
+
+```bash
+# Network IP
+$ curl http://10.255.20.15:3000/api/v1/customers -H "Origin: http://10.255.20.15:5173"
+< Access-Control-Allow-Origin: http://10.255.20.15:5173 ✅
+
+# Localhost
+$ curl http://localhost:3000/api/v1/customers -H "Origin: http://localhost:5173"
+< Access-Control-Allow-Origin: http://localhost:5173 ✅
+
+# 127.0.0.1
+$ curl http://127.0.0.1:3000/api/v1/customers -H "Origin: http://127.0.0.1:5173"
+< Access-Control-Allow-Origin: http://127.0.0.1:5173 ✅
+```
+
+### Files Changed
+
+**Gateway:**
+- `services/api-gateway/src/app.ts` - Fixed CORS origin reflection
+- `services/api-gateway/ecosystem.config.js` - Added ALLOWED_ORIGINS env var
+
+**CRM Service:**
+- `services/crm-service/.env` - Added all three origins
+- `services/crm-service/src/utils/config.ts` - Split CORS_ORIGIN into array
+
+### Impact
+
+- ✅ Network testing now functional from any device
+- ✅ Windows host can access Linux container services
+- ✅ Mobile device testing enabled
+- ✅ Cross-device development unblocked
+
+**Issue Closed:** CORS working correctly for all origins
+**Frontend Unblocked:** Junior-5 can now test from network IP
