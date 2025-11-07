@@ -270,3 +270,92 @@ When complete, you should have:
 **Created by:** Main Agent (PM)
 **Date:** 2025-11-06 10:15 UTC
 **Branch:** `claude/session-011CUa86VGPkHjf5rHUmwfvG`
+
+---
+
+## ✅ Resolution (2025-11-07 07:51 UTC)
+
+**Resolved By:** Senior-4 (API Gateway Agent)
+**Actual Time:** 30 minutes
+**Root Cause:** Redis configured without data directory, defaulting to read-only root directory `/`
+
+### Problem Analysis
+
+Redis was failing with MISCONF error:
+```
+MISCONF Redis is configured to save RDB snapshots, but it's currently unable 
+to persist to disk. Commands that may modify the data set are disabled.
+```
+
+**Root Cause:**
+- Redis config `/etc/redis/redis.conf` had no `dir` directive
+- Redis defaulted to `/` (root directory) which is read-only
+- RDB snapshots couldn't be written
+- All write operations blocked (including rate limiting INCR/DECR)
+
+### Solution Applied
+
+1. **Added persistence configuration to `/etc/redis/redis.conf`:**
+   ```
+   dir /var/lib/redis
+   dbfilename dump.rdb
+   ```
+
+2. **Force-restarted Redis service:**
+   ```bash
+   systemctl restart redis-server
+   ```
+
+3. **Verified Redis writes work:**
+   ```bash
+   # SET/GET operations successful
+   redis-cli SET test_key "Hello Redis"
+   # Output: OK
+   
+   # INCR operations successful (rate limiting)
+   redis-cli INCR test_counter  
+   # Output: 1
+   ```
+
+4. **Verified RDB persistence:**
+   ```bash
+   redis-cli BGSAVE
+   # Output: Background saving started
+   
+   ls -lh /var/lib/redis/
+   # Output: -rw-rw---- 1 redis redis 166 Nov 7 07:51 dump.rdb
+   ```
+
+5. **Restarted API Gateway:**
+   ```bash
+   pm2 restart psa-api-gateway
+   ```
+
+### Verification Results
+
+✅ **Redis Status:** Running, no errors
+✅ **Redis Writes:** Working (SET, GET, INCR all functional)
+✅ **RDB Persistence:** Saving to `/var/lib/redis/dump.rdb`
+✅ **Gateway Connection:** Connected successfully
+✅ **No MISCONF Errors:** Gateway logs clean
+
+**Gateway Logs (Success):**
+```
+info: Redis connected for rate limiting
+info: Redis connection verified
+```
+
+### Files Changed
+
+- `/etc/redis/redis.conf` - Added `dir` and `dbfilename` directives
+
+**Note:** This file is not in git (system config), documented here for reference.
+
+### Impact
+
+- ✅ Gateway rate limiting now functional with Redis backend
+- ✅ No more MISCONF errors in logs
+- ✅ Redis persistence operational for crash recovery
+- ✅ All services can use Redis for caching/rate limiting
+
+**Issue Closed:** Redis persistence fixed, gateway rate limiting operational
