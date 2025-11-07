@@ -9,6 +9,7 @@ import { logger } from '../utils/logger';
 import { AuthenticatedRequest } from '../types';
 import { authRateLimiter, userRateLimiter } from '../middleware/rate-limit.middleware';
 import { circuitBreakerRegistry } from '../middleware/circuit-breaker.middleware';
+import { authenticateJWT } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -176,17 +177,19 @@ router.use('/api/v1/users', userRateLimiter, createServiceProxy('auth'));
 /**
  * Route: Tickets Service
  * All /api/v1/tickets/*, /api/v1/time-entries/*, /api/v1/comments/* requests go to tickets service
+ * Protected with JWT authentication
  */
-router.use('/api/v1/tickets', createServiceProxy('tickets'));
-router.use('/api/v1/time-entries', createServiceProxy('tickets'));
-router.use('/api/v1/comments', createServiceProxy('tickets'));
+router.use('/api/v1/tickets', authenticateJWT, createServiceProxy('tickets'));
+router.use('/api/v1/time-entries', authenticateJWT, createServiceProxy('tickets'));
+router.use('/api/v1/comments', authenticateJWT, createServiceProxy('tickets'));
 
 /**
  * Route: CRM Service
  * All /api/v1/customers/* and /api/v1/contacts/* requests go to CRM service
+ * Protected with JWT authentication
  */
-router.use('/api/v1/customers', createServiceProxy('crm'));
-router.use('/api/v1/contacts', createServiceProxy('crm'));
+router.use('/api/v1/customers', authenticateJWT, createServiceProxy('crm'));
+router.use('/api/v1/contacts', authenticateJWT, createServiceProxy('crm'));
 
 /**
  * Future routes - commented out until services are ready
