@@ -4,6 +4,32 @@
 
 import Joi from 'joi';
 
+// Schema for creating time entry from ticket endpoint (ticket_id comes from URL)
+export const createTicketTimeEntrySchema = Joi.object({
+  date: Joi.date().optional(),
+
+  hours: Joi.number().min(0.25).max(24).required()
+    .messages({
+      'number.base': 'hours must be a number',
+      'number.min': 'hours must be at least 0.25 (15 minutes)',
+      'number.max': 'hours cannot exceed 24',
+      'any.required': 'hours is required',
+    }),
+
+  description: Joi.string().min(1).max(1000).required()
+    .messages({
+      'string.empty': 'Description is required',
+      'string.max': 'Description cannot exceed 1000 characters',
+    }),
+
+  notes: Joi.string().max(2000).optional().allow(null, ''),
+
+  work_type: Joi.string().valid('support', 'project', 'consulting', 'emergency').optional(),
+
+  billable: Joi.boolean().optional(),
+});
+
+// Generic schema for creating time entry (requires ticket_id or project_task_id)
 export const createTimeEntrySchema = Joi.object({
   ticket_id: Joi.string().uuid().optional().allow(null),
 
@@ -13,10 +39,10 @@ export const createTimeEntrySchema = Joi.object({
 
   hours: Joi.number().min(0.25).max(24).required()
     .messages({
-      'number.base': 'Hours must be a number',
-      'number.min': 'Hours must be at least 0.25 (15 minutes)',
-      'number.max': 'Hours cannot exceed 24',
-      'any.required': 'Hours is required',
+      'number.base': 'hours must be a number',
+      'number.min': 'hours must be at least 0.25 (15 minutes)',
+      'number.max': 'hours cannot exceed 24',
+      'any.required': 'hours is required',
     }),
 
   description: Joi.string().min(1).max(1000).required()

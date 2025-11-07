@@ -62,8 +62,7 @@ export function validate(schema: any) {
     if (error) {
       const messages = error.details.map((detail: any) => detail.message).join('; ');
       res.status(400).json({
-        error: 'VALIDATION_ERROR',
-        message: messages,
+        error: messages,
         details: error.details,
       });
       return;

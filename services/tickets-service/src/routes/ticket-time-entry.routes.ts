@@ -7,7 +7,7 @@ import { TimeEntryController } from '../controllers/time-entry.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/error.middleware';
 import {
-  createTimeEntrySchema,
+  createTicketTimeEntrySchema,
   timeEntryFiltersSchema,
 } from '../validators/time-entry.validator';
 
@@ -41,7 +41,7 @@ router.get(
  */
 router.post(
   '/',
-  validate(createTimeEntrySchema),
+  validate(createTicketTimeEntrySchema),
   TimeEntryController.createTimeEntry
 );
 
