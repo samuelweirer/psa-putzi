@@ -171,11 +171,11 @@ function rateLimitHandler(req: Request, res: any): void {
  * Global rate limiter - applies to all requests by IP
  * Prevents abuse from single IP addresses
  *
- * Limits: 100 requests per 15 minutes per IP
+ * Limits: Configurable via RATE_LIMIT_GLOBAL_MAX (default: 100 requests per 15 minutes per IP)
  */
 export const globalRateLimiter: RateLimitRequestHandler = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // Default: 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '100', 10),
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   store: new RedisRateLimitStore({ prefix: 'rl:global:' }),
@@ -191,11 +191,11 @@ export const globalRateLimiter: RateLimitRequestHandler = rateLimit({
  * Strict rate limiter for authentication endpoints
  * Prevents brute force attacks on login/password endpoints
  *
- * Limits: 5 requests per 15 minutes per IP
+ * Limits: Configurable via RATE_LIMIT_AUTH_MAX (default: 5 for production, recommend 50+ for development)
  */
 export const authRateLimiter: RateLimitRequestHandler = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // Default: 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '5', 10),
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisRateLimitStore({ prefix: 'rl:auth:' }),
