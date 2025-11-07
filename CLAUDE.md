@@ -540,3 +540,4 @@ For questions about architecture decisions, consult the BDUF documentation first
 **Last Updated:** 2025-11-05 13:25 UTC
 **Version:** 2.4
 **Status:** Sprint 2-4 Active - Auth 97%, Gateway 100%, Frontend 70%, CRM 20% (Day 1 ✅)
+- if it comes to an error which is not in your part, create an issue

@@ -12,6 +12,7 @@ import timeEntryRoutes from './routes/time-entry.routes';
 import ticketTimeEntryRoutes from './routes/ticket-time-entry.routes';
 import commentRoutes from './routes/comment.routes';
 import ticketCommentRoutes from './routes/ticket-comment.routes';
+import attachmentRoutes from './routes/attachment.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import config from './utils/config';
 import logger from './utils/logger';
@@ -63,6 +64,7 @@ export function createApp(): Express {
   app.use('/api/v1/tickets', ticketRoutes);
   app.use('/api/v1/time-entries', timeEntryRoutes);
   app.use('/api/v1/comments', commentRoutes);
+  app.use('/api/v1', attachmentRoutes);
 
   // Nested routes
   app.use('/api/v1/tickets/:ticketId/time-entries', ticketTimeEntryRoutes);

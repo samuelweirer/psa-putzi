@@ -7,6 +7,7 @@ import { getPool, closePool } from './utils/database';
 import config from './utils/config';
 import logger from './utils/logger';
 import { eventPublisher } from './utils/event-publisher';
+import { ensureUploadDir } from './controllers/attachment.controller';
 
 const app = createApp();
 
@@ -29,6 +30,9 @@ async function start() {
   try {
     // Test database connection
     await testDatabaseConnection();
+
+    // Ensure upload directory exists
+    await ensureUploadDir();
 
     // Connect to RabbitMQ
     try {
