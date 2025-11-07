@@ -8,6 +8,7 @@ import config from './utils/config';
 import logger from './utils/logger';
 import { eventPublisher } from './utils/event-publisher';
 import { ensureUploadDir } from './controllers/attachment.controller';
+import { emailIngestionService } from './services/email-ingestion.service';
 
 const app = createApp();
 
@@ -45,6 +46,12 @@ async function start() {
       // Don't fail startup if RabbitMQ is unavailable
     }
 
+    // Start email ingestion service (if enabled)
+    // Note: Service constructor already starts polling if IMAP_ENABLED=true
+    logger.info('Email ingestion service initialized', {
+      enabled: process.env.IMAP_ENABLED === 'true',
+    });
+
     // Start listening
     const server = app.listen(config.port, () => {
       logger.info('Tickets service started', {
@@ -60,6 +67,10 @@ async function start() {
 
       server.close(async () => {
         logger.info('HTTP server closed');
+
+        // Stop email ingestion
+        emailIngestionService.stop();
+
         await closePool();
         await eventPublisher.close();
         logger.info('RabbitMQ connection closed');
