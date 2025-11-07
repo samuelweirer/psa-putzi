@@ -318,6 +318,7 @@ export class TimeEntryModel {
 
     // Calculate margin percentage
     const totalRevenue = parseFloat(summary.total_revenue || 0);
+    const totalCost = parseFloat(summary.total_cost || 0);
     const totalProfit = parseFloat(summary.total_profit || 0);
     const marginPercent = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
@@ -326,7 +327,7 @@ export class TimeEntryModel {
       total_hours: parseFloat(summary.total_hours || 0),
       billable_hours: parseFloat(summary.billable_hours || 0),
       total_revenue: parseFloat(totalRevenue.toFixed(2)),
-      total_cost: parseFloat((summary.total_cost || 0).toFixed(2)),
+      total_cost: parseFloat(totalCost.toFixed(2)),
       total_profit: parseFloat(totalProfit.toFixed(2)),
       margin_percent: parseFloat(marginPercent.toFixed(2)),
       billed_count: parseInt(summary.billed_count, 10),
