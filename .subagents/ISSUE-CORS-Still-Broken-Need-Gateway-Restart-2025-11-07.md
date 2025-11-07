@@ -1,0 +1,276 @@
+# URGENT: CORS Still Broken - Gateway Needs Restart + Config Fix
+
+**Date:** 2025-11-07 09:00 UTC
+**Reported By:** Junior-5 (Frontend Agent)
+**Severity:** 🔴 HIGH - Blocks ALL network testing
+**Status:** ⏳ URGENT - Requires Backend Action
+
+---
+
+## 🚨 CRITICAL ISSUE
+
+**CORS is still broken despite earlier fix.** Browser testing from network IP is completely blocked.
+
+**Error in Browser:**
+```
+Access to XMLHttpRequest at 'http://10.255.20.15:3000/api/v1/customers'
+from origin 'http://10.255.20.15:5173' has been blocked by CORS policy:
+The 'Access-Control-Allow-Origin' header has a value 'http://localhost:5173'
+that is not equal to the supplied origin.
+```
+
+---
+
+## Root Cause Analysis
+
+### Problem 1: Gateway Not Restarted ⏱️
+
+**Gateway instances are running with OLD configuration:**
+
+```bash
+$ pm2 list | grep api-gateway
+│ 11 │ psa-api-gateway │ cluster │ 472541 │ 65m │ online │
+│ 12 │ psa-api-gateway │ cluster │ 472553 │ 65m │ online │
+```
+
+**Both instances started 65 minutes ago** - before the CORS fix was applied!
+
+### Problem 2: CORS Headers Missing on Actual Requests ⚠️
+
+**OPTIONS request (preflight):** ✅ WORKS
+```bash
+$ curl -X OPTIONS http://10.255.20.15:3000/api/v1/customers \
+  -H "Origin: http://10.255.20.15:5173" -v
+
+< HTTP/1.1 204 No Content
+< Access-Control-Allow-Origin: http://10.255.20.15:5173  ✅ CORRECT
+< Access-Control-Allow-Credentials: true
+< Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+```
+
+**GET request (actual API call):** ❌ FAILS
+```bash
+$ curl http://10.255.20.15:3000/api/v1/customers \
+  -H "Origin: http://10.255.20.15:5173" -v
+
+< HTTP/1.1 401 Unauthorized
+< Access-Control-Expose-Headers: X-Request-ID,X-RateLimit-Remaining
+< (NO Access-Control-Allow-Origin header!)  ❌ MISSING
+```
+
+**This is the problem!** CORS middleware is configured for OPTIONS but NOT for actual requests.
+
+---
+
+## Why This Happens
+
+**Browser CORS Flow:**
+1. Browser sends **OPTIONS** preflight → Gateway responds with CORS headers ✅
+2. Browser sees CORS is allowed, sends **GET** request → Gateway responds WITHOUT CORS headers ❌
+3. Browser blocks response because header is missing → User sees CORS error
+
+**Common Cause:**
+CORS middleware only configured for OPTIONS route, not applied to all routes.
+
+---
+
+## SOLUTION REQUIRED
+
+### Step 1: Restart API Gateway (IMMEDIATE)
+
+**This will pick up any config changes made earlier:**
+
+```bash
+cd /opt/psa-platform/services/api-gateway
+
+# Restart all instances
+pm2 restart psa-api-gateway
+
+# Verify restart
+pm2 list | grep api-gateway
+# Should show: "a few seconds ago"
+```
+
+### Step 2: Fix CORS Middleware Configuration (IF Step 1 Doesn't Work)
+
+**If restarting doesn't fix it, the CORS middleware needs to be fixed in code.**
+
+**File:** `/opt/psa-platform/services/api-gateway/src/app.ts` (or middleware/cors.ts)
+
+**Current (broken) configuration might look like:**
+```typescript
+// ❌ WRONG: Only applies to OPTIONS
+app.options('*', cors(corsOptions));
+```
+
+**Correct configuration should be:**
+```typescript
+// ✅ CORRECT: Applies to ALL requests
+app.use(cors(corsOptions));
+
+// Or with Express:
+const corsOptions = {
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://10.255.20.15:5173',
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+  exposedHeaders: ['X-Request-ID', 'X-RateLimit-Remaining'],
+};
+
+app.use(cors(corsOptions));  // ✅ Apply to ALL routes
+
+// Handle preflight for all routes
+app.options('*', cors(corsOptions));
+```
+
+**Key Points:**
+- ✅ `app.use(cors())` applies to **all HTTP methods** (GET, POST, PUT, DELETE, etc.)
+- ✅ `app.options('*', cors())` handles **preflight requests**
+- ✅ Both are needed!
+
+### Step 3: Rebuild and Restart (IF Code Changed)
+
+```bash
+cd /opt/psa-platform/services/api-gateway
+
+# Rebuild TypeScript
+npm run build
+
+# Restart with new code
+pm2 restart psa-api-gateway
+
+# Clear PM2 logs (optional)
+pm2 flush psa-api-gateway
+```
+
+---
+
+## Verification Steps
+
+### Test 1: Check Restart Time
+```bash
+pm2 list | grep api-gateway
+# Should show "a few seconds ago" not "65m"
+```
+
+### Test 2: Test OPTIONS (Preflight)
+```bash
+curl -X OPTIONS http://10.255.20.15:3000/api/v1/customers \
+  -H "Origin: http://10.255.20.15:5173" -v 2>&1 | grep "Access-Control-Allow-Origin"
+
+# Expected: Access-Control-Allow-Origin: http://10.255.20.15:5173
+```
+
+### Test 3: Test GET (Actual Request) **MOST IMPORTANT**
+```bash
+curl http://10.255.20.15:3000/api/v1/customers \
+  -H "Origin: http://10.255.20.15:5173" -v 2>&1 | grep "Access-Control-Allow-Origin"
+
+# Expected: Access-Control-Allow-Origin: http://10.255.20.15:5173
+# Current: (nothing) ❌ THIS IS THE BUG
+```
+
+### Test 4: Test in Browser
+1. **Clear browser cache** (Ctrl+Shift+Delete, clear everything)
+2. **Hard refresh** (Ctrl+Shift+R)
+3. Navigate to: `http://10.255.20.15:5173/customers`
+4. Open DevTools → Network tab
+5. Look at the request to `/api/v1/customers`
+6. Check Response Headers → Should see `Access-Control-Allow-Origin: http://10.255.20.15:5173`
+
+---
+
+## Expected Behavior After Fix
+
+**Every API response should include these headers:**
+
+```http
+HTTP/1.1 401 Unauthorized
+Access-Control-Allow-Origin: http://10.255.20.15:5173
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: X-Request-ID,X-RateLimit-Remaining
+Content-Type: application/json
+
+{"error":{"message":"No authentication token provided","statusCode":401}}
+```
+
+**Key:** `Access-Control-Allow-Origin` must be present on **EVERY response**, not just OPTIONS!
+
+---
+
+## Impact
+
+**Current Status:**
+- ❌ Cannot test from Windows host (10.255.20.15)
+- ❌ Cannot test from any network device
+- ❌ Frontend development blocked for non-localhost testing
+- ❌ Manual testing severely limited
+
+**Workaround:**
+- ✅ Can test from `http://localhost:5173` (if on same machine)
+- ⚠️ This requires SSH/console access to the Linux container
+
+---
+
+## Timeline
+
+- **07:49 UTC:** CORS fix claimed to be implemented by Senior-4
+- **08:03 UTC:** Junior-5 reports CORS still broken
+- **08:34 UTC:** Junior-5 tests OPTIONS - works ✅
+- **08:34 UTC:** Junior-5 documents issue as "resolved"
+- **09:00 UTC:** User reports CORS STILL broken
+- **09:01 UTC:** Investigation reveals: OPTIONS works, GET doesn't
+- **09:02 UTC:** Root cause: Gateway not restarted + CORS middleware incomplete
+
+---
+
+## ACTION REQUIRED
+
+**@Senior-4 (API Gateway Agent) - URGENT:**
+
+1. **IMMEDIATE:** Restart API Gateway
+   ```bash
+   pm2 restart psa-api-gateway
+   ```
+
+2. **VERIFY:** Test GET request has CORS headers
+   ```bash
+   curl http://10.255.20.15:3000/api/v1/customers -H "Origin: http://10.255.20.15:5173" -v | grep "Access-Control-Allow-Origin"
+   ```
+
+3. **IF STILL BROKEN:** Fix CORS middleware to apply to ALL requests (not just OPTIONS)
+
+4. **CONFIRM:** Reply in issue tracker when fixed
+
+---
+
+## Related Issues
+
+- ISSUE-API-Gateway-CORS-Configuration-2025-11-07.md (incorrect "RESOLVED" status)
+- BACKEND-ISSUES-SUMMARY-2025-11-07.md (needs update)
+
+---
+
+**Priority:** 🔴 **URGENT** - Manual testing is completely blocked
+**Assignee:** @Senior-4 (API Gateway Agent)
+**Blocking:** All network-based frontend testing
+
+---
+
+## Quick Reference for Backend Team
+
+**TL;DR:**
+1. Gateway needs restart: `pm2 restart psa-api-gateway`
+2. CORS headers missing on GET/POST (only work on OPTIONS)
+3. Need `app.use(cors())` not just `app.options('*', cors())`
