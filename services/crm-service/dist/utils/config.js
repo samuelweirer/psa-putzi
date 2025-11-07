@@ -33,7 +33,9 @@ const config = {
         secret: process.env.JWT_SECRET || 'your-secret-key',
     },
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: process.env.CORS_ORIGIN
+            ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+            : '*',
     },
     logging: {
         level: process.env.LOG_LEVEL || 'info',

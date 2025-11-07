@@ -26,7 +26,7 @@ declare const config: {
         secret: string;
     };
     cors: {
-        origin: string;
+        origin: string | string[];
     };
     logging: {
         level: string;
