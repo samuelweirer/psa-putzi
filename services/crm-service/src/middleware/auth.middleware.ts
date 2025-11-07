@@ -35,9 +35,11 @@ export function authenticate(req: AuthRequest, _res: Response, next: NextFunctio
     };
 
     // Validate required fields
-    if (!user.id || !user.tenant_id) {
+    if (!user.id) {
       throw new UnauthorizedError('Invalid token payload');
     }
+
+    // Note: tenant_id is optional - not all users (e.g., customer_user) have a tenant
 
     // Attach user to request
     req.user = user;
