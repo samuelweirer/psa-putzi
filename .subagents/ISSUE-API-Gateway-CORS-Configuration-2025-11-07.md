@@ -288,7 +288,7 @@ Set up local nginx reverse proxy to bypass CORS
 
 ---
 
-**Status:** ⏳ PENDING - Awaiting API Gateway CORS configuration update
+**Status:** ✅ RESOLVED - See resolution section below
 
 ---
 
