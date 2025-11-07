@@ -35,6 +35,27 @@ router.get('/statistics', TicketController.getStatistics);
 router.get('/my-tickets', TicketController.getMyTickets);
 
 /**
+ * @route GET /api/v1/tickets/workload-stats
+ * @desc Get technician workload statistics
+ * @access Private
+ */
+router.get('/workload-stats', TicketController.getWorkloadStats);
+
+/**
+ * @route POST /api/v1/tickets/assignment-recommendations
+ * @desc Get assignment recommendations for a ticket
+ * @access Private
+ */
+router.post('/assignment-recommendations', TicketController.getAssignmentRecommendations);
+
+/**
+ * @route POST /api/v1/tickets/:id/auto-assign
+ * @desc Trigger auto-assignment for a ticket
+ * @access Private
+ */
+router.post('/:id/auto-assign', TicketController.autoAssignTicket);
+
+/**
  * @route GET /api/v1/tickets/:id/activity
  * @desc Get activity timeline for a ticket
  * @access Private

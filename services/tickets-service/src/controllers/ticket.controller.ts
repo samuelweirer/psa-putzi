@@ -7,6 +7,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest, TicketFilters } from '../types';
 import { TicketModel } from '../models/ticket.model';
+import { AssignmentService } from '../services/assignment.service';
 import { ValidationError } from '../utils/errors';
 import logger from '../utils/logger';
 
@@ -270,6 +271,129 @@ export class TicketController {
       });
 
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/tickets/:id/auto-assign
+   * Trigger auto-assignment for a ticket
+   */
+  static async autoAssignTicket(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Authentication required');
+      }
+
+      const { id } = req.params;
+      const { tenant_id } = req.user;
+
+      // Get ticket details to extract criteria
+      const ticket = await TicketModel.findById(id, tenant_id);
+
+      // Run auto-assignment
+      const assignedTo = await AssignmentService.autoAssignTicket(id, {
+        priority: ticket.priority,
+        category: ticket.category || undefined,
+        tags: ticket.tags || undefined,
+        customer_id: ticket.customer_id,
+      });
+
+      if (!assignedTo) {
+        logger.warn('Auto-assignment found no suitable technician', { ticketId: id });
+        res.status(404).json({
+          error: 'No suitable technician found for auto-assignment',
+          message: 'All technicians may be unavailable or overloaded',
+        });
+        return;
+      }
+
+      // Update ticket with assignment
+      await TicketModel.update(
+        id,
+        tenant_id,
+        {
+          assigned_to: assignedTo,
+          status: 'assigned',
+        },
+        req.user.id
+      );
+
+      logger.info('Ticket auto-assigned', {
+        ticketId: id,
+        assignedTo,
+        tenantId: tenant_id,
+      });
+
+      res.json({
+        success: true,
+        assigned_to: assignedTo,
+        message: 'Ticket auto-assigned successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/tickets/assignment-recommendations
+   * Get assignment recommendations for a ticket (without actually assigning)
+   */
+  static async getAssignmentRecommendations(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Authentication required');
+      }
+
+      const { priority, category, tags, customer_id } = req.body;
+      const limit = parseInt(req.query.limit as string, 10) || 5;
+
+      const recommendations = await AssignmentService.getAssignmentRecommendations(
+        {
+          priority,
+          category,
+          tags,
+          customer_id,
+        },
+        limit
+      );
+
+      logger.info('Assignment recommendations retrieved', {
+        tenantId: req.user.tenant_id,
+        count: recommendations.length,
+      });
+
+      res.json({
+        recommendations,
+        count: recommendations.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/tickets/workload-stats
+   * Get technician workload statistics
+   */
+  static async getWorkloadStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new ValidationError('Authentication required');
+      }
+
+      const stats = await AssignmentService.getWorkloadStats();
+
+      logger.info('Workload statistics retrieved', {
+        tenantId: req.user.tenant_id,
+        technicianCount: stats.length,
+      });
+
+      res.json({
+        stats,
+        count: stats.length,
+      });
     } catch (error) {
       next(error);
     }
