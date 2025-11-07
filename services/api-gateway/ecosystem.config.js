@@ -34,11 +34,13 @@ module.exports = {
         NODE_ENV: 'development',
         PORT: 3000,
         REDIS_PASSWORD: 'uRUl9UDmXMnV0CkqWxvEW8z5Dp6rDV7C',
+        CRM_SERVICE_URL: 'http://localhost:3020',
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
         REDIS_PASSWORD: 'uRUl9UDmXMnV0CkqWxvEW8z5Dp6rDV7C',
+        CRM_SERVICE_URL: 'http://localhost:3020',
       },
 
       // Logging

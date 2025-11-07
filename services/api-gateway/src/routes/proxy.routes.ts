@@ -182,11 +182,16 @@ router.use('/api/v1/time-entries', createServiceProxy('tickets'));
 router.use('/api/v1/comments', createServiceProxy('tickets'));
 
 /**
+ * Route: CRM Service
+ * All /api/v1/customers/* and /api/v1/contacts/* requests go to CRM service
+ */
+router.use('/api/v1/customers', createServiceProxy('crm'));
+router.use('/api/v1/contacts', createServiceProxy('crm'));
+
+/**
  * Future routes - commented out until services are ready
  */
 
-// router.use('/api/v1/customers', createServiceProxy('crm'));
-// router.use('/api/v1/contacts', createServiceProxy('crm'));
 // router.use('/api/v1/billing', createServiceProxy('billing'));
 // router.use('/api/v1/projects', createServiceProxy('projects'));
 // router.use('/api/v1/assets', createServiceProxy('assets'));
