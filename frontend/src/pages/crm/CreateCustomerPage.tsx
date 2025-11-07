@@ -88,8 +88,25 @@ export function CreateCustomerPage() {
     setIsLoading(true);
 
     try {
+      // Transform camelCase to snake_case for backend
+      const backendData = {
+        company_name: formData.companyName,
+        contact_person: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postal_code: formData.postalCode,
+        country: formData.country,
+        website: formData.website || undefined,
+        tax_id: formData.taxId || undefined,
+        contract_type: formData.contractType,
+        notes: formData.notes || undefined,
+        status: 'active' as const, // Default status
+      };
+
       // Create customer via API
-      await api.post('/customers', formData);
+      await api.post('/customers', backendData);
 
       setSuccess(true);
 
