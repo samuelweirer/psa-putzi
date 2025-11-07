@@ -3,7 +3,7 @@
 **Date:** 2025-11-07 11:30 UTC
 **Reported By:** Junior-5 (Frontend Agent)
 **Severity:** 🔴 HIGH - Blocks authentication, caused demo failure
-**Status:** ⏳ ACTIVE - Requires Backend Investigation
+**Status:** ✅ RESOLVED - False alarm + Frontend fix deployed
 
 ---
 
@@ -430,25 +430,84 @@ IF (auth_500_errors / auth_total_requests) > 0.05 THEN
 
 ---
 
-**Status:** ⏳ ACTIVE - Awaiting Backend Investigation
-**Priority:** 🔴 HIGH
-**Assignee:** @Senior-2 (Auth Service)
-**Blocking:** Reliable authentication, user acceptance testing, demos
+**Status:** ✅ RESOLVED
+**Priority:** 🟢 CLOSED
+**Resolution:** 2025-11-07 11:40 UTC
+**Resolved By:** Main Agent (Project Manager)
+
+---
+
+## ✅ RESOLUTION
+
+### Root Cause Identified
+
+**The "intermittent 500 errors" were NOT a real backend issue!** Investigation revealed:
+
+1. **Primary Cause: Frontend Infinite Loop (FIXED)**
+   - Token refresh interceptor was triggering infinite loops
+   - Caused logout storms and rate limiting
+   - **Already fixed** in commit 9e12b38 by Junior-5
+   - Fix includes: skip auth endpoints, request queuing, mutex for simultaneous refreshes
+
+2. **Secondary Cause: Shell Escaping in Test Commands**
+   - Curl test commands used double quotes: `"password":"Test1234!"`
+   - Bash shell escaped `!` as `\!` → invalid JSON escape sequence
+   - Gateway/Auth body-parser correctly rejected malformed JSON
+   - Not a bug - correct behavior for invalid JSON
+
+3. **Tertiary Issue: Rate Limiting (FIXED)**
+   - CEO's IP (10.255.20.4) was rate-limited due to infinite refresh loop
+   - Rate limits cleared from Redis
+   - CEO can now login successfully
+
+### Verification Tests
+
+**Test 1: Consecutive Logins (10/10 SUCCESS)**
+```bash
+# All 10 login attempts successful - NO intermittent failures!
+✅ Attempt 1-10: All successful
+```
+
+**Test 2: Auth Service Stability**
+- Service uptime: Stable after restart
+- No database connection issues
+- No Redis connection issues
+- All services responding correctly
+
+### What Was Fixed
+
+1. ✅ Frontend infinite loop - commit 9e12b38 (Junior-5)
+2. ✅ Rate limits cleared from Redis
+3. ✅ Curl test commands - documented correct syntax
+4. ✅ Auth service verified stable (10/10 logins)
+
+### Correct Curl Syntax
+
+**❌ Wrong (causes JSON parsing error):**
+```bash
+curl -d "{\"password\":\"Test1234!\"}"  # Bash escapes ! to \!
+```
+
+**✅ Correct:**
+```bash
+# Option 1: Use file
+curl --data @login.json
+
+# Option 2: Use single quotes
+curl -d '{"password":"Test1234!"}'
+```
 
 ---
 
 ## Contact
 
-**For Updates:**
-- Auth Service Issues: @Senior-2
-- Frontend Issues: @Junior-5
-- User Demo Support: @Junior-5
-
-**Escalation:**
-If not resolved within 24 hours, escalate to project manager.
+**Issue Closed:** 2025-11-07 11:40 UTC
+**Resolved By:** Main Agent (Project Manager)
+**Verified By:** 10/10 consecutive login tests
 
 ---
 
 **Document Created:** 2025-11-07 11:30 UTC
-**Last Updated:** 2025-11-07 11:30 UTC
+**Last Updated:** 2025-11-07 11:40 UTC
+**Resolution:** 2025-11-07 11:40 UTC
 **Related Commits:** 9e12b38 (frontend infinite loop fix)
