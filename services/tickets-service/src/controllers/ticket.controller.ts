@@ -10,6 +10,12 @@ import { TicketModel } from '../models/ticket.model';
 import { AssignmentService } from '../services/assignment.service';
 import { ValidationError } from '../utils/errors';
 import logger from '../utils/logger';
+import { emailService } from '../services/email.service';
+import {
+  prepareTicketEmailData,
+  getTicketNotificationRecipients,
+  getUserEmail,
+} from '../utils/notification-helper';
 
 export class TicketController {
   /**
@@ -106,6 +112,19 @@ export class TicketController {
         userId,
       });
 
+      // Send email notification (async, don't wait)
+      (async () => {
+        try {
+          const recipients = await getTicketNotificationRecipients(ticket, true);
+          if (recipients.length > 0) {
+            const ticketData = await prepareTicketEmailData(ticket);
+            await emailService.sendTicketCreated(recipients, ticketData);
+          }
+        } catch (emailError) {
+          logger.error('Failed to send ticket created email', { ticketId: ticket.id, emailError });
+        }
+      })();
+
       res.status(201).json(ticket);
     } catch (error) {
       next(error);
@@ -153,14 +172,34 @@ export class TicketController {
       const { tenant_id, id: userId } = req.user;
       const { status } = req.body;
 
+      // Get current ticket to capture old status
+      const oldTicket = await TicketModel.findById(id, tenant_id);
+      const oldStatus = oldTicket.status;
+
       const ticket = await TicketModel.update(id, tenant_id, { status }, userId);
 
       logger.info('Ticket status updated', {
         ticketId: id,
+        oldStatus,
         newStatus: status,
         tenantId: tenant_id,
         userId,
       });
+
+      // Send email notification (async, don't wait)
+      if (oldStatus !== status) {
+        (async () => {
+          try {
+            const recipients = await getTicketNotificationRecipients(ticket, true);
+            if (recipients.length > 0) {
+              const ticketData = await prepareTicketEmailData(ticket);
+              await emailService.sendTicketStatusChanged(recipients, ticketData, oldStatus);
+            }
+          } catch (emailError) {
+            logger.error('Failed to send status change email', { ticketId: id, emailError });
+          }
+        })();
+      }
 
       res.json(ticket);
     } catch (error) {
@@ -190,6 +229,19 @@ export class TicketController {
         tenantId: tenant_id,
         userId,
       });
+
+      // Send email notification to assigned user (async, don't wait)
+      (async () => {
+        try {
+          const assignedUser = await getUserEmail(assigned_to);
+          if (assignedUser) {
+            const ticketData = await prepareTicketEmailData(ticket);
+            await emailService.sendTicketAssigned([assignedUser], ticketData);
+          }
+        } catch (emailError) {
+          logger.error('Failed to send assignment email', { ticketId: id, emailError });
+        }
+      })();
 
       res.json(ticket);
     } catch (error) {
