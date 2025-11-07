@@ -375,3 +375,90 @@ $ curl http://127.0.0.1:3000/api/v1/customers -H "Origin: http://127.0.0.1:5173"
 
 **Issue Closed:** CORS working correctly for all origins
 **Frontend Unblocked:** Junior-5 can now test from network IP
+
+---
+
+## ✅ RESOLUTION (2025-11-07 10:54 UTC)
+
+**Resolved By:** Senior-4 (API Gateway Agent)
+**Resolution Time:** ~2 hours from initial report
+
+### Actions Taken:
+
+The backend team successfully resolved the CORS issue by restarting the API Gateway.
+
+**Gateway Restart:**
+- Previous instances: 11, 12 (running for 65+ minutes with old config)
+- New instances: 14, 15 (running with correct CORS configuration)
+- Command used: `pm2 restart psa-api-gateway`
+
+### Verification:
+
+**CORS Headers Now Present on All Requests:**
+
+```bash
+$ curl -v http://10.255.20.15:3000/api/v1/customers -H "Origin: http://10.255.20.15:5173" 2>&1 | grep "access-control"
+
+< access-control-allow-origin: http://10.255.20.15:5173  ✅
+< vary: Origin  ✅
+< access-control-allow-credentials: true  ✅
+< Access-Control-Expose-Headers: X-Request-ID,X-RateLimit-Remaining  ✅
+```
+
+**All Required Headers Present:**
+- ✅ `access-control-allow-origin: http://10.255.20.15:5173`
+- ✅ `vary: Origin`
+- ✅ `access-control-allow-credentials: true`
+- ✅ `Access-Control-Expose-Headers` configured
+
+### Browser Testing Confirmed:
+
+User confirmed that CORS errors are no longer appearing in the browser console.
+
+**Before Fix:**
+```
+Access to XMLHttpRequest at 'http://10.255.20.15:3000/api/v1/customers'
+from origin 'http://10.255.20.15:5173' has been blocked by CORS policy
+```
+
+**After Fix:**
+✅ No CORS errors
+✅ Requests successful (401 Unauthorized is expected - needs login)
+✅ Network testing unblocked
+
+### Impact Resolution:
+
+**Network Testing Now Enabled:**
+- ✅ Can test from Windows host (10.255.20.15)
+- ✅ Can test from any network device
+- ✅ Frontend development unblocked
+- ✅ Manual testing can proceed
+
+**All Origins Working:**
+- ✅ `http://localhost:5173`
+- ✅ `http://127.0.0.1:5173`
+- ✅ `http://10.255.20.15:5173`
+
+### Root Cause Confirmed:
+
+**Problem:** Gateway instances were not restarted after CORS configuration was updated.
+
+**Why it happened:**
+1. CORS fix was applied to configuration files
+2. Gateway needed restart to load new configuration
+3. Old instances (11, 12) continued running with old CORS settings
+4. Restart created new instances (14, 15) with correct settings
+
+**Lesson:** After configuration changes, always restart services!
+
+### Status Update:
+
+**Issue Status:** ✅ FULLY RESOLVED
+**Network Testing:** ✅ UNBLOCKED
+**Manual Testing:** ✅ CAN PROCEED
+
+---
+
+**Issue Closed:** 2025-11-07 10:54 UTC
+**Total Resolution Time:** ~2 hours
+**Blocker Removed:** All frontend teams can now test from any network location
