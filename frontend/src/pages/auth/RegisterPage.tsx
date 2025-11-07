@@ -83,7 +83,7 @@ export function RegisterPage() {
       // Auto-login successful, redirect to dashboard
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.');
     } finally {
       setIsLoading(false);
     }

@@ -23,7 +23,7 @@ export function LoginPage() {
       if (err.message === 'MFA_REQUIRED') {
         navigate('/auth/mfa-verify');
       } else {
-        setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
+        setError(err.response?.data?.error?.message || err.response?.data?.message || 'Login failed. Please check your credentials.');
       }
     } finally {
       setIsLoading(false);
