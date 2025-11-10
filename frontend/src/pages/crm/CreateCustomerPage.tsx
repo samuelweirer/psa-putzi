@@ -88,21 +88,38 @@ export function CreateCustomerPage() {
     setIsLoading(true);
 
     try {
-      // Transform camelCase to snake_case for backend
+      // Map country names to ISO 3-letter codes
+      const countryMap: Record<string, string> = {
+        'Deutschland': 'DEU',
+        'Österreich': 'AUT',
+        'Schweiz': 'CHE',
+      };
+
+      // Validate and format website
+      let websiteUrl = formData.website.trim();
+      if (websiteUrl && !websiteUrl.match(/^https?:\/\//i)) {
+        websiteUrl = 'https://' + websiteUrl;
+      }
+
+      // Transform frontend fields to backend schema
       const backendData = {
-        company_name: formData.companyName,
-        contact_person: formData.contactPerson,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        postal_code: formData.postalCode,
-        country: formData.country,
-        website: formData.website || undefined,
+        name: formData.companyName, // Backend uses 'name' not 'company_name'
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        address_line1: formData.address, // Backend uses 'address_line1'
+        city: formData.city || undefined,
+        postal_code: formData.postalCode || undefined,
+        country: countryMap[formData.country] || 'DEU', // Convert to ISO 3-letter code
+        website: websiteUrl || undefined, // Must be valid URI or undefined
         tax_id: formData.taxId || undefined,
-        contract_type: formData.contractType,
-        notes: formData.notes || undefined,
-        status: 'active' as const, // Default status
+        status: 'active' as const,
+        type: 'business' as const, // Default type
+        // Note: contact_person and contract_type stored in notes for now
+        notes: [
+          formData.notes,
+          formData.contactPerson ? `Ansprechpartner: ${formData.contactPerson}` : '',
+          formData.contractType ? `Vertragstyp: ${formData.contractType}` : '',
+        ].filter(Boolean).join('\n') || undefined,
       };
 
       // Create customer via API
