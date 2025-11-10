@@ -139,6 +139,7 @@ export class AuthService {
     // Generate tokens
     const payload: JWTPayload = {
       sub: user.id,
+      tenantId: user.tenant_id, // Include tenant_id in JWT payload
       email: user.email,
       role: user.role,
       permissions: user.permissions || {},
@@ -199,6 +200,7 @@ export class AuthService {
     // Generate new access token with fresh user data
     const newPayload: JWTPayload = {
       sub: user.id,
+      tenantId: user.tenant_id, // Include tenant_id in JWT payload
       email: user.email,
       role: user.role,
       permissions: user.permissions || {},

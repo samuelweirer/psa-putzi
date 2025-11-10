@@ -98,8 +98,21 @@ export function CreateContactPage() {
     setError('');
 
     try {
+      // Transform camelCase to snake_case for backend
+      const backendData = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email || null,
+        phone_office: formData.phone || null, // Map single phone to phone_office
+        title: formData.jobTitle || null,
+        is_primary: formData.isPrimary,
+        is_billing: formData.isBilling,
+        is_technical: formData.isTechnical,
+        notes: formData.notes || null,
+      };
+
       // Create contact via API
-      await api.post(`/customers/${customerId}/contacts`, formData);
+      await api.post(`/customers/${customerId}/contacts`, backendData);
 
       setSuccess(true);
 

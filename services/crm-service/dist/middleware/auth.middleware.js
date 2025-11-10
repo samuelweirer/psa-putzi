@@ -34,9 +34,10 @@ function authenticate(req, _res, next) {
             permissions: decoded.permissions || [],
         };
         // Validate required fields
-        if (!user.id || !user.tenant_id) {
+        if (!user.id) {
             throw new errors_1.UnauthorizedError('Invalid token payload');
         }
+        // Note: tenant_id is optional - not all users (e.g., customer_user) have a tenant
         // Attach user to request
         req.user = user;
         logger_1.default.debug('User authenticated', {

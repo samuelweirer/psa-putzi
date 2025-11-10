@@ -4,6 +4,7 @@
 
 export interface User {
   id: string;
+  tenant_id?: string; // Optional - not all users belong to a tenant (e.g., system_admin)
   email: string;
   password_hash?: string;
   first_name: string;
@@ -94,6 +95,7 @@ export interface MfaSetupToken {
 
 export interface JWTPayload {
   sub: string;  // user_id
+  tenantId?: string;  // tenant_id (optional - not all users have a tenant)
   email: string;
   role: UserRole;
   permissions: Record<string, any>;
