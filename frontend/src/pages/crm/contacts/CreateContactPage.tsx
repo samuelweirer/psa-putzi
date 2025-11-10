@@ -180,7 +180,7 @@ export function CreateContactPage() {
             </ol>
           </nav>
           <h1 className="text-2xl font-bold text-gray-900">Neuen Kontakt hinzufügen</h1>
-          <p className="mt-1 text-sm text-gray-500">für {customer.companyName}</p>
+          {customer && <p className="mt-1 text-sm text-gray-500">für {customer.companyName}</p>}
         </div>
 
         {error && (
