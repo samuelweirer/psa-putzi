@@ -8,14 +8,14 @@ import { api } from '../../../lib/api';
 
 interface Contact {
   id: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  phone: string;
-  jobTitle: string;
-  isPrimary: boolean;
-  isBilling: boolean;
-  isTechnical: boolean;
+  phone_office: string;
+  title: string;
+  is_primary: boolean;
+  is_billing: boolean;
+  is_technical: boolean;
   notes: string;
 }
 
@@ -65,18 +65,18 @@ export function ContactListPage() {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
-      contact.firstName.toLowerCase().includes(searchLower) ||
-      contact.lastName.toLowerCase().includes(searchLower) ||
+      contact.first_name.toLowerCase().includes(searchLower) ||
+      contact.last_name.toLowerCase().includes(searchLower) ||
       contact.email.toLowerCase().includes(searchLower) ||
-      contact.phone.includes(searchTerm) ||
-      contact.jobTitle.toLowerCase().includes(searchLower)
+      contact.phone_office.includes(searchTerm) ||
+      contact.title.toLowerCase().includes(searchLower)
     );
   });
 
   const handleDeleteClick = (contact: Contact) => {
     setContactToDelete({
       id: contact.id,
-      name: `${contact.firstName} ${contact.lastName}`,
+      name: `${contact.first_name} ${contact.last_name}`,
     });
     setIsDeleteModalOpen(true);
   };
@@ -226,32 +226,32 @@ export function ContactListPage() {
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
                         <span className="text-blue-600 font-semibold text-lg">
-                          {contact.firstName[0]}
-                          {contact.lastName[0]}
+                          {contact.first_name[0]}
+                          {contact.last_name[0]}
                         </span>
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {contact.firstName} {contact.lastName}
+                          {contact.first_name} {contact.last_name}
                         </h3>
-                        <p className="text-sm text-gray-500">{contact.jobTitle}</p>
+                        <p className="text-sm text-gray-500">{contact.title}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {contact.isPrimary && (
+                    {contact.is_primary && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                         ⭐ Primär
                       </span>
                     )}
-                    {contact.isBilling && (
+                    {contact.is_billing && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                         💶 Rechnung
                       </span>
                     )}
-                    {contact.isTechnical && (
+                    {contact.is_technical && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                         🔧 Technisch
                       </span>
@@ -268,8 +268,8 @@ export function ContactListPage() {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <span className="mr-2">📞</span>
-                      <a href={`tel:${contact.phone}`} className="hover:text-blue-600">
-                        {contact.phone}
+                      <a href={`tel:${contact.phone_office}`} className="hover:text-blue-600">
+                        {contact.phone_office}
                       </a>
                     </div>
                   </div>
@@ -292,14 +292,14 @@ export function ContactListPage() {
                     <button
                       onClick={() => handleDeleteClick(contact)}
                       className="text-sm font-medium text-red-600 hover:text-red-800"
-                      disabled={contact.isPrimary}
-                      title={contact.isPrimary ? 'Primärer Kontakt kann nicht gelöscht werden' : ''}
+                      disabled={contact.is_primary}
+                      title={contact.is_primary ? 'Primärer Kontakt kann nicht gelöscht werden' : ''}
                     >
                       🗑️ Löschen
                     </button>
                   </div>
 
-                  {contact.isPrimary && (
+                  {contact.is_primary && (
                     <p className="mt-2 text-xs text-gray-500 italic">
                       💡 Primärer Kontakt kann nicht gelöscht werden
                     </p>
