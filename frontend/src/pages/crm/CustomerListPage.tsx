@@ -9,13 +9,13 @@ import { api } from '../../lib/api';
 
 interface Customer {
   id: string;
-  companyName: string;
-  contactPerson: string;
+  name: string;
   email: string;
   phone: string;
   status: 'lead' | 'prospect' | 'active' | 'inactive' | 'churned';
-  contractType: 'managed' | 'project' | 'support';
-  createdAt: string;
+  type: string;
+  created_at: string;
+  customer_number?: string;
 }
 
 export function CustomerListPage() {
@@ -55,16 +55,15 @@ export function CustomerListPage() {
       // Search filter
       const matchesSearch =
         searchTerm === '' ||
-        customer.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone.includes(searchTerm);
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (customer.phone && customer.phone.includes(searchTerm));
 
       // Status filter
       const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
 
       // Contract filter
-      const matchesContract = contractFilter === 'all' || customer.contractType === contractFilter;
+      const matchesContract = contractFilter === 'all' || customer.type === contractFilter;
 
       return matchesSearch && matchesStatus && matchesContract;
     });
@@ -83,7 +82,7 @@ export function CustomerListPage() {
   };
 
   const handleDeleteClick = (customer: Customer) => {
-    setCustomerToDelete({ id: customer.id, name: customer.companyName });
+    setCustomerToDelete({ id: customer.id, name: customer.name });
     setIsDeleteModalOpen(true);
   };
 
@@ -255,16 +254,13 @@ export function CustomerListPage() {
                     Firma
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ansprechpartner
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Kontakt
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vertragstyp
+                    Kundentyp
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Aktionen
@@ -274,7 +270,7 @@ export function CustomerListPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
                       Keine Kunden gefunden. Passen Sie Ihre Suchkriterien an oder fügen Sie einen neuen Kunden hinzu.
                     </td>
                   </tr>
@@ -282,22 +278,19 @@ export function CustomerListPage() {
                   paginatedCustomers.map((customer) => (
                     <tr key={customer.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{customer.companyName}</div>
-                        <div className="text-xs text-gray-500">seit {customer.createdAt}</div>
+                        <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                        <div className="text-xs text-gray-500">{customer.customer_number || 'Neue Kunde'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{customer.contactPerson}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{customer.email}</div>
-                        <div className="text-xs text-gray-500">{customer.phone}</div>
+                        <div className="text-sm text-gray-900">{customer.email || 'Keine E-Mail'}</div>
+                        <div className="text-xs text-gray-500">{customer.phone || 'Keine Telefonnummer'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={customer.status} size="sm" />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getContractTypeBadge(customer.contractType)}`}>
-                          {getContractTypeLabel(customer.contractType)}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getContractTypeBadge(customer.type)}`}>
+                          {getContractTypeLabel(customer.type)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
