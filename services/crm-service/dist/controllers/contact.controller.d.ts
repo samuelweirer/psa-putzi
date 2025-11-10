@@ -12,7 +12,7 @@ export declare class ContactController {
      */
     static listContacts(req: AuthRequest, res: Response, next: NextFunction): Promise<void>;
     /**
-     * GET /api/v1/contacts/:id
+     * GET /api/v1/contacts/:id or /api/v1/customers/:customerId/contacts/:contactId
      * Get single contact by ID
      */
     static getContact(req: AuthRequest, res: Response, next: NextFunction): Promise<void>;
@@ -22,12 +22,12 @@ export declare class ContactController {
      */
     static createContact(req: AuthRequest, res: Response, next: NextFunction): Promise<void>;
     /**
-     * PUT /api/v1/contacts/:id
+     * PUT /api/v1/contacts/:id or /api/v1/customers/:customerId/contacts/:contactId
      * Update contact
      */
     static updateContact(req: AuthRequest, res: Response, next: NextFunction): Promise<void>;
     /**
-     * DELETE /api/v1/contacts/:id
+     * DELETE /api/v1/contacts/:id or /api/v1/customers/:customerId/contacts/:contactId
      * Soft delete contact
      */
     static deleteContact(req: AuthRequest, res: Response, next: NextFunction): Promise<void>;

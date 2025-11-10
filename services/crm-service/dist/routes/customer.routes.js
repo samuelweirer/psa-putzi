@@ -64,6 +64,24 @@ router.get('/:customerId/contacts', contact_controller_1.ContactController.listC
  */
 router.post('/:customerId/contacts', (0, error_middleware_1.validate)(contact_validator_1.createContactSchema), contact_controller_1.ContactController.createContact);
 /**
+ * @route GET /api/v1/customers/:customerId/contacts/:contactId
+ * @desc Get single contact for a customer
+ * @access Private
+ */
+router.get('/:customerId/contacts/:contactId', contact_controller_1.ContactController.getContact);
+/**
+ * @route PUT /api/v1/customers/:customerId/contacts/:contactId
+ * @desc Update contact for customer
+ * @access Private
+ */
+router.put('/:customerId/contacts/:contactId', (0, error_middleware_1.validate)(contact_validator_1.updateContactSchema), contact_controller_1.ContactController.updateContact);
+/**
+ * @route DELETE /api/v1/customers/:customerId/contacts/:contactId
+ * @desc Delete contact for customer
+ * @access Private
+ */
+router.delete('/:customerId/contacts/:contactId', contact_controller_1.ContactController.deleteContact);
+/**
  * @route GET /api/v1/customers/:customerId/locations
  * @desc Get all locations for a customer
  * @access Private
