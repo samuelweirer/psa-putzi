@@ -39,7 +39,7 @@ export class ContactController {
   }
 
   /**
-   * GET /api/v1/contacts/:id
+   * GET /api/v1/contacts/:id or /api/v1/customers/:customerId/contacts/:contactId
    * Get single contact by ID
    */
   static async getContact(req: AuthRequest, res: Response, next: NextFunction) {
@@ -48,12 +48,13 @@ export class ContactController {
         throw new ValidationError('Authentication required');
       }
 
-      const { id } = req.params;
+      // Handle both route patterns: /contacts/:id and /customers/:customerId/contacts/:contactId
+      const contactId = req.params.id || req.params.contactId;
       const { tenant_id } = req.user;
 
-      const contact = await ContactModel.findById(id, tenant_id);
+      const contact = await ContactModel.findById(contactId, tenant_id);
 
-      logger.info('Contact retrieved', { contactId: id, tenantId: tenant_id });
+      logger.info('Contact retrieved', { contactId, tenantId: tenant_id });
 
       res.json(contact);
     } catch (error) {
@@ -95,7 +96,7 @@ export class ContactController {
   }
 
   /**
-   * PUT /api/v1/contacts/:id
+   * PUT /api/v1/contacts/:id or /api/v1/customers/:customerId/contacts/:contactId
    * Update contact
    */
   static async updateContact(req: AuthRequest, res: Response, next: NextFunction) {
@@ -104,12 +105,13 @@ export class ContactController {
         throw new ValidationError('Authentication required');
       }
 
-      const { id } = req.params;
+      // Handle both route patterns: /contacts/:id and /customers/:customerId/contacts/:contactId
+      const contactId = req.params.id || req.params.contactId;
       const { tenant_id } = req.user;
 
-      const contact = await ContactModel.update(id, tenant_id, req.body);
+      const contact = await ContactModel.update(contactId, tenant_id, req.body);
 
-      logger.info('Contact updated', { contactId: id, tenantId: tenant_id });
+      logger.info('Contact updated', { contactId, tenantId: tenant_id });
 
       res.json(contact);
     } catch (error) {
@@ -118,7 +120,7 @@ export class ContactController {
   }
 
   /**
-   * DELETE /api/v1/contacts/:id
+   * DELETE /api/v1/contacts/:id or /api/v1/customers/:customerId/contacts/:contactId
    * Soft delete contact
    */
   static async deleteContact(req: AuthRequest, res: Response, next: NextFunction) {
@@ -127,12 +129,13 @@ export class ContactController {
         throw new ValidationError('Authentication required');
       }
 
-      const { id } = req.params;
+      // Handle both route patterns: /contacts/:id and /customers/:customerId/contacts/:contactId
+      const contactId = req.params.id || req.params.contactId;
       const { tenant_id } = req.user;
 
-      await ContactModel.softDelete(id, tenant_id);
+      await ContactModel.softDelete(contactId, tenant_id);
 
-      logger.info('Contact deleted', { contactId: id, tenantId: tenant_id });
+      logger.info('Contact deleted', { contactId, tenantId: tenant_id });
 
       res.status(204).send();
     } catch (error) {

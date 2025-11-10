@@ -13,7 +13,7 @@ import {
   updateCustomerSchema,
   customerFiltersSchema,
 } from '../validators/customer.validator';
-import { createContactSchema } from '../validators/contact.validator';
+import { createContactSchema, updateContactSchema } from '../validators/contact.validator';
 import { createLocationSchema } from '../validators/location.validator';
 
 const router = Router();
@@ -92,6 +92,31 @@ router.post(
   validate(createContactSchema),
   ContactController.createContact
 );
+
+/**
+ * @route GET /api/v1/customers/:customerId/contacts/:contactId
+ * @desc Get single contact for a customer
+ * @access Private
+ */
+router.get('/:customerId/contacts/:contactId', ContactController.getContact);
+
+/**
+ * @route PUT /api/v1/customers/:customerId/contacts/:contactId
+ * @desc Update contact for customer
+ * @access Private
+ */
+router.put(
+  '/:customerId/contacts/:contactId',
+  validate(updateContactSchema),
+  ContactController.updateContact
+);
+
+/**
+ * @route DELETE /api/v1/customers/:customerId/contacts/:contactId
+ * @desc Delete contact for customer
+ * @access Private
+ */
+router.delete('/:customerId/contacts/:contactId', ContactController.deleteContact);
 
 /**
  * @route GET /api/v1/customers/:customerId/locations
