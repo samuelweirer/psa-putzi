@@ -13,6 +13,7 @@ import { CreateCustomerPage } from './pages/crm/CreateCustomerPage';
 import { EditCustomerPage } from './pages/crm/EditCustomerPage';
 import { ContactListPage } from './pages/crm/contacts/ContactListPage';
 import { CreateContactPage } from './pages/crm/contacts/CreateContactPage';
+import { EditContactPage } from './pages/crm/contacts/EditContactPage';
 import { LocationListPage } from './pages/crm/locations/LocationListPage';
 import { CreateLocationPage } from './pages/crm/locations/CreateLocationPage';
 import { TicketListPage } from './pages/tickets/TicketListPage';
@@ -86,6 +87,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateContactPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customers/:customerId/contacts/:contactId/edit"
+            element={
+              <ProtectedRoute>
+                <EditContactPage />
               </ProtectedRoute>
             }
           />
