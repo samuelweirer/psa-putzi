@@ -5,10 +5,11 @@
 import Joi from 'joi';
 
 export const createContactSchema = Joi.object({
-  customer_id: Joi.string().uuid().required()
+  // customer_id is optional in body because it comes from URL params
+  // The controller extracts it from /customers/:customerId/contacts
+  customer_id: Joi.string().uuid().optional()
     .messages({
       'string.guid': 'Customer ID must be a valid UUID',
-      'any.required': 'Customer ID is required',
     }),
 
   first_name: Joi.string().min(1).max(100).required()

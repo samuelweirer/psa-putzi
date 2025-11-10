@@ -9,10 +9,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateContactSchema = exports.createContactSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.createContactSchema = joi_1.default.object({
-    customer_id: joi_1.default.string().uuid().required()
+    // customer_id is optional in body because it comes from URL params
+    // The controller extracts it from /customers/:customerId/contacts
+    customer_id: joi_1.default.string().uuid().optional()
         .messages({
         'string.guid': 'Customer ID must be a valid UUID',
-        'any.required': 'Customer ID is required',
     }),
     first_name: joi_1.default.string().min(1).max(100).required()
         .messages({
